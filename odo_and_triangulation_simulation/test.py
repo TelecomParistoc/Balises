@@ -48,18 +48,21 @@ sigma_absolute = 4.0
 odometry_error = generate_gaussian(0, sigma_relative, N)
 odometry = relative_noice(odometry_error, x_base)
 beacon = gaussian_noice_added(x_base, sigma_absolute)
-corrected = simu_get_position_codeuse_et_triangulation(odometry_error, beacon, sigma_relative, sigma_absolute)
+corrected_ju = mixed(odometry_error, beacon, sigma_relative, sigma_absolute)
+corrected_nico = simu_get_position_codeuse_et_triangulation(odometry_error, beacon, sigma_relative, sigma_absolute)
 
 plt.figure(1)
 plt.plot(t, beacon, 'k', color='cyan')
 plt.plot(t, odometry, 'k', color='red')
 plt.plot(t, x_base, 'k', color='black')
-plt.plot(t, corrected, 'k', color='green')
+plt.plot(t, corrected_ju, 'k', color='green')
+plt.plot(t, corrected_nico, 'k', color='orange')
 plt.show()
 
 print("Mean error and standard deviation beacon : "+str(abs((np.array(x_base)-np.array(beacon)).mean()))+" "+str((np.array(x_base)-np.array(beacon)).std()))
 print("Mean error and standard deviation odometry : "+str(abs((np.array(x_base)-np.array(odometry)).mean()))+" "+str((np.array(x_base)-np.array(odometry)).std())+" and just the relative error : "+str(abs(np.array(odometry_error).mean()))+" "+str(np.array(odometry_error).std()))
-print("Mean error and standard deviation corrected : "+str(abs((np.array(x_base)-np.array(corrected)).mean()))+" "+str((np.array(x_base)-np.array(corrected)).std()))
+print("Mean error and standard deviation corrected (julien) : "+str(abs((np.array(x_base)-np.array(corrected_ju)).mean()))+" "+str((np.array(x_base)-np.array(corrected_ju)).std()))
+print("Mean error and standard deviation corrected (nico) : "+str(abs((np.array(x_base)-np.array(corrected_nico)).mean()))+" "+str((np.array(x_base)-np.array(corrected_nico)).std()))
 
 var = []
 mean = []
