@@ -23,22 +23,32 @@ def relative_noice(relative, x):
 def mixed(relative, absolute, sigma_relative, sigma_absolute, c=None):
     phi = sigma_absolute/sigma_relative
     if c is None:
-        c = phi*phi/(2*phi*phi+1)
-        c = 0.73
+        c = phi/(2*phi+1)
+        c = 0.69
     r = [absolute[0]]
     for i in range(1,len(relative)):
         r.append((1-c)*absolute[i]+c*relative[i]+c*r[i-1])
     return r
+
+def simu_get_position_codeuse_et_triangulation(relative, absolute, sigma_relative, sigma_absolute):
+    simu = absolute[:]
+
+    for i in range(1, len(absolute)):
+        simu[i] = (sigma_relative * absolute[i] + sigma_absolute * relative[i] + simu[i-1]) / (sigma_absolute + sigma_relative)
+
+    return simu
 
 N = 500
 t = np.arange(0, N, 1)
 x_base = [float(i)/5.0 for i in range(N//2)]
 x_base.extend([float(N//2-1-i)/5.0 for i in range(N//2)])
 
-odometry_error = generate_gaussian(0, 0.6, N)
+sigma_relative = 1.4
+sigma_absolute = 4.0
+odometry_error = generate_gaussian(0, sigma_relative, N)
 odometry = relative_noice(odometry_error, x_base)
-beacon = gaussian_noice_added(x_base, 3.0)
-corrected = mixed(odometry_error, beacon, 0.3, 3.0)
+beacon = gaussian_noice_added(x_base, sigma_absolute)
+corrected = simu_get_position_codeuse_et_triangulation(odometry_error, beacon, sigma_relative, sigma_absolute)
 
 plt.figure(1)
 plt.plot(t, beacon, 'k', color='cyan')
@@ -56,7 +66,7 @@ mean = []
 index = 0
 min = -1
 for i in np.arange(0.1, 0.9, 0.01):
-    corrected = mixed(odometry_error, beacon, 0.3, 30, i)
+    corrected = mixed(odometry_error, beacon, sigma_relative, sigma_absolute, i)
     v = (np.array(x_base)-np.array(corrected)).std()
     m = abs((np.array(x_base)-np.array(corrected)).mean())
     var.append(v)
