@@ -23,7 +23,7 @@ def relative_noice(relative, x):
 def mixed(relative, absolute, sigma_relative, sigma_absolute, c=None):
     phi = sigma_absolute/sigma_relative
     if c is None:
-        c = phi*phi/(phi*phi+1)
+        c = phi*phi/(2*phi*phi+1)
         c = 0.73
     r = [absolute[0]]
     for i in range(1,len(relative)):
@@ -35,7 +35,7 @@ t = np.arange(0, N, 1)
 x_base = [float(i)/5.0 for i in range(N//2)]
 x_base.extend([float(N//2-1-i)/5.0 for i in range(N//2)])
 
-odometry_error = gaussian_noice_added([0 for i in range(N)], 0.6)
+odometry_error = generate_gaussian(0, 0.6, N)
 odometry = relative_noice(odometry_error, x_base)
 beacon = gaussian_noice_added(x_base, 3.0)
 corrected = mixed(odometry_error, beacon, 0.3, 3.0)
