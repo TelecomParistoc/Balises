@@ -85,25 +85,25 @@ print("Mean error and standard deviation odometry : "+str(abs((np.array(x_base)-
 print("Mean error and standard deviation corrected (julien) : "+str(abs((np.array(x_base)-np.array(corrected_ju)).mean()))+" "+str((np.array(x_base)-np.array(corrected_ju)).std()))
 print("Mean error and standard deviation corrected (nico) : "+str(abs((np.array(x_base)-np.array(corrected_nico)).mean()))+" "+str((np.array(x_base)-np.array(corrected_nico)).std()))
 
-var = []
-mean = []
-index = 0
-min = -1
-for i in np.arange(0.1, 0.9, 0.01):
-    corrected = mixed(odometry_error, beacon, sigma_relative, sigma_absolute, i)
-    v = (np.array(x_base)-np.array(corrected)).std()
-    m = abs((np.array(x_base)-np.array(corrected)).mean())
-    var.append(v)
-    mean.append(m)
-
-    if v*v+m*m<min or min<0:
-        min = v*v+m*m
-        index = i
-
-print("Experimental min found is "+str(min)+" at "+str(index))
-
-t = np.arange(0.1, 0.9, 0.01)
-plt.plot(t, var, 'k', color='red')
-plt.plot(t, mean, 'k', color='green')
-plt.plot([index, index], [0, math.sqrt(min)])
-plt.show()
+# var = []
+# mean = []
+# index = 0
+# min = -1
+# for i in np.arange(0.1, 0.9, 0.01):
+#     corrected = mixed(odometry_error, beacon, sigma_relative, sigma_absolute, i)
+#     v = (np.array(x_base)-np.array(corrected)).std()
+#     m = abs((np.array(x_base)-np.array(corrected)).mean())
+#     var.append(v)
+#     mean.append(m)
+#
+#     if v*v+m*m<min or min<0:
+#         min = v*v+m*m
+#         index = i
+#
+# print("Experimental min found is "+str(min)+" at "+str(index))
+#
+# t = np.arange(0.1, 0.9, 0.01)
+# plt.plot(t, var, 'k', color='red')
+# plt.plot(t, mean, 'k', color='green')
+# plt.plot([index, index], [0, math.sqrt(min)])
+# plt.show()
