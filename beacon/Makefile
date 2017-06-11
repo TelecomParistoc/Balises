@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
 endif
 
 # C specific options here (added to USE_OPT).
@@ -83,11 +83,11 @@ endif
 #
 
 # Define project name here
-PROJECT = SwARM
+PROJECT = beacons
 
 # Imported source files and paths
 CHIBIOS = ../ChibiOS
-BOARD = ../boards/SWARM
+BOARD = ../board
 
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f3xx.mk
@@ -101,7 +101,7 @@ include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 
 # Define linker script file here
-LDSCRIPT= ../shared/STM32F302R6.ld
+LDSCRIPT= ../shared/STM32F302C8.ld
 
 vpath %.c ../shared/decadriver/
 vpath %.c ../shared/
@@ -120,9 +120,7 @@ CSRC = $(STARTUPSRC) \
        $(BOARDSRC) \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        $(CHIBIOS)/os/various/shell.c \
-       $(DRIVERSRC) \
-       $(RADIOSRC) \
-       main.c battery.c led.c robot.c
+       usbconf.c main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -226,11 +224,11 @@ RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
 
 debugserver:
-	JLinkGDBServer -if swd -device "STM32F302R6" -LocalhostOnly
+	JLinkGDBServer -if swd -device "STM32F302C8" -LocalhostOnly
 
 debug: all
 	-killall JLinkGDBServer
-	JLinkGDBServer -if swd -device "STM32F302R6" -LocalhostOnly&
+	JLinkGDBServer -if swd -device "STM32F302C8" -LocalhostOnly&
 	$(GDB) build/$(PROJECT).elf
 
 .PHONY: debug debugserver

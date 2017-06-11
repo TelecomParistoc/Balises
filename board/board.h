@@ -22,11 +22,11 @@
 #define STM32_LSEDRV                (3U << 3U)
 
 #if !defined(STM32_HSECLK)
-#define STM32_HSECLK                8000000U
+#define STM32_HSECLK                8000 000U
 #endif
 
 #define STM32_LSE_BYPASS
-//#define STM32_HSE_BYPASS
+#define STM32_HSE_BYPASS
 
 /*
  * MCU type as defined in the ST header.
@@ -59,7 +59,7 @@
 #define GPIOB_DWM_SCK               3U
 #define GPIOB_DWM_MISO              4U
 #define GPIOB_DWM_MOSI              5U
-#define GPIOB_DWN_nCS               6U
+#define GPIOB_DWM_nCS               6U
 #define GPIOB_DWM_RST               7U
 #define GPIOB_RPI_SCL               8U
 #define GPIOB_RPI_SDA               9U
@@ -83,7 +83,7 @@
 #define LINE_USB_CONNECT           PAL_LINE(GPIOA, GPIOA_USB_CONNECT)
 #define LINE_DWM_IRQ               PAL_LINE(GPIOA, GPIOA_DWM_IRQ)
 
-#define LINE_DWM_CSn               PAL_LINE(GPIOB, GPIOB_RCODA)
+#define LINE_DWM_nCS               PAL_LINE(GPIOB, GPIOB_RCODA)
 #define LINE_DWM_RST               PAL_LINE(GPIOB, GPIOB_LCODA)
 #define LINE_MOT_nCS               PAL_LINE(GPIOB, GPIOB_RCODB)
 
@@ -166,58 +166,63 @@
  * PB0  - PIN0                      (input floating).
  * PB1  - PIN1                      (input floating).
  * PB2  - PIN2                      (input floating).
- * PB3  - RAD_SCK                   (alternate 6).
- * PB4  - RAD_MISO                  (alternate 6).
- * PB5  - RAD_MOSI                  (alternate 6).
- * PB6  - PIN6                      (input floating).
- * PB7  - RPI_SDA                   (alternate 4 open drain).
+ * PB3  - DWM_SCK                   (alternate 6).
+ * PB4  - DWM_MISO                  (alternate 6).
+ * PB5  - DWM_MOSI                  (alternate 6).
+ * PB6  - DWM_nCS                   (output push-pull).
+ * PB7  - DWM_RST                   (output push-pull).
  * PB8  - RPI_SCL                   (alternate 4 open drain).
- * PB9  - PIN9                      (input floating).
- * PB10 - RCODA                     (input pull-up).
- * PB11 - LCODA                     (input pull-up).
- * PB12 - RCODB                     (input pull-up).
- * PB13 - LCODB                     (input pull-up).
- * PB14 - PIN14                     (input floating).
- * PB15 - PIN15                     (input floating).
+ * PB9  - RPI_SDA                   (alternate 4 open drain).
+ * PB10 - RPI_TX                    (alternate 7).
+ * PB11 - RPI_RX                    (alternate 7).
+ * PB12 - MOT_nCS                   (alternate 5).
+ * PB13 - MOT_SCK                   (alternate 5).
+ * PB14 - MOT_MISO                  (alternate 5).
+ * PB15 - MOT_MOSI                  (alternate 5).
  */
 #define VAL_GPIOB_MODER             (PIN_MODE_INPUT(GPIOB_PIN0) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN1) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN2) |           \
-                                     PIN_MODE_ALTERNATE(GPIOB_RAD_SCK) |    \
-                                     PIN_MODE_ALTERNATE(GPIOB_RAD_MISO) |   \
-                                     PIN_MODE_ALTERNATE(GPIOB_RAD_MOSI) |   \
-                                     PIN_MODE_INPUT(GPIOB_PIN6) |           \
-                                     PIN_MODE_ALTERNATE(GPIOB_RPI_SDA) |    \
+                                     PIN_MODE_ALTERNATE(GPIOB_DWM_SCK) |    \
+                                     PIN_MODE_ALTERNATE(GPIOB_DWM_MISO) |   \
+                                     PIN_MODE_ALTERNATE(GPIOB_DWM_MOSI) |   \
+                                     PIN_MODE_OUTPUT(GPIOB_DWM_nCS) |       \
+                                     PIN_MODE_OUTPUT(GPIOB_DWM_RST) |       \
                                      PIN_MODE_ALTERNATE(GPIOB_RPI_SCL) |    \
-                                     PIN_MODE_INPUT(GPIOB_PIN9) |           \
-                                     PIN_MODE_INPUT(GPIOB_RCODA) |          \
-                                     PIN_MODE_INPUT(GPIOB_LCODA) |          \
-                                     PIN_MODE_INPUT(GPIOB_RCODB) |          \
-                                     PIN_MODE_INPUT(GPIOB_LCODB) |          \
-                                     PIN_MODE_INPUT(GPIOB_PIN14) |          \
-                                     PIN_MODE_INPUT(GPIOB_PIN15))
-#define VAL_GPIOB_OTYPER            (PIN_OTYPE_OPENDRAIN(GPIOB_RPI_SDA) |\
-                                     PIN_OTYPE_OPENDRAIN(GPIOB_RPI_SCL))
+                                     PIN_MODE_ALTERNATE(GPIOB_RPI_SDA) |    \
+                                     PIN_MODE_ALTERNATE(GPIOB_RPI_TX) |     \
+                                     PIN_MODE_ALTERNATE(GPIOB_RPI_RX) |     \
+                                     PIN_MODE_ALTERNATE(GPIOB_MOT_nCS) |    \
+                                     PIN_MODE_ALTERNATE(GPIOB_MOT_SCK) |    \
+                                     PIN_MODE_ALTERNATE(GPIOB_MOT_MISO) |   \
+                                     PIN_MODE_ALTERNATE(GPIOB_MOT_MOSI))
+#define VAL_GPIOB_OTYPER            (PIN_OTYPE_OPENDRAIN(GPIOB_RPI_SCL) |\
+                                     PIN_OTYPE_OPENDRAIN(GPIOB_RPI_SDA))
 #define VAL_GPIOB_OSPEEDR   0xFFFFFFFF
-#define VAL_GPIOB_PUPDR             (PIN_PUPDR_PULLUP(GPIOB_RCODA) |        \
-                                     PIN_PUPDR_PULLUP(GPIOB_LCODA) |        \
-                                     PIN_PUPDR_PULLUP(GPIOB_RCODB) |        \
-                                     PIN_PUPDR_PULLUP(GPIOB_LCODB))
+#define VAL_GPIOB_PUPDR     0x00000000
 #define VAL_GPIOB_ODR       0x00000000
-#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_RAD_SCK, 6U) |       \
-                                     PIN_AFIO_AF(GPIOB_RAD_MISO, 6U) |      \
-                                     PIN_AFIO_AF(GPIOB_RAD_MOSI, 6U) |      \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 4U))
-#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_RPI_SCL, 4U))
+#define VAL_GPIOB_AFRL              (PIN_AFIO_AF(GPIOB_DWM_SCK, 6U) |       \
+                                     PIN_AFIO_AF(GPIOB_DWM_MISO, 6U) |      \
+                                     PIN_AFIO_AF(GPIOB_DWM_MOSI, 6U))
+#define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_RPI_SCL, 4U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 4U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 7U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 7U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U))
 
 /*
  * GPIOC setup:
  *
- * PC13 - PIN13                     (input floating).
- * PC14 - PIN14                     (input floating).
- * PC15 - PIN15                     (input floating).
+ * PC13 - LED_BATT                  (output push-pull).
+ * PC14 - LED_RXTX                  (output push-pull).
+ * PC15 - LED_SYNC                  (output push-pull).
  */
-#define VAL_GPIOC_MODER     0x00000000
+#define VAL_GPIOC_MODER             (PIN_MODE_OUTPUT(GPIOC_LED_BATT) |      \
+                                     PIN_MODE_OUTPUT(GPIOC_LED_RXTX) |      \
+                                     PIN_MODE_OUTPUT(GPIOC_LED_SYNC))
 #define VAL_GPIOC_OTYPER    0x00000000
 #define VAL_GPIOC_OSPEEDR   0xFFFFFFFF
 #define VAL_GPIOC_PUPDR     0x00000000
@@ -226,7 +231,7 @@
 #define VAL_GPIOC_AFRH      0x00000000
 
 /*
- * GPIOD and E doesn't exist but seems to be required by ChibiOS
+ * GPIOD and GPIOE don't exist but seem to be required by ChibiOS
  */
 #define VAL_GPIOD_MODER     0x00000000
 #define VAL_GPIOD_OTYPER    0x00000000
@@ -246,18 +251,16 @@
 /*
  * GPIOF setup:
  *
- * PF0  - IMU_SDA                    (alternate 4 open drain).
- * PF1  - IMU_SCL                    (alternate 4 open drain).
+ * PF0  - OSC_IN                    (input floating).
+ * PF1  - OSC_OUT                   (input floating).
  */
-#define VAL_GPIOF_MODER             (PIN_MODE_ALTERNATE(GPIOF_IMU_SDA) |    \
-                                     PIN_MODE_ALTERNATE(GPIOF_IMU_SCL))
-#define VAL_GPIOF_OTYPER            (PIN_OTYPE_OPENDRAIN(GPIOF_IMU_SDA) |   \
-                                     PIN_OTYPE_OPENDRAIN(GPIOF_IMU_SCL))
+#define VAL_GPIOF_MODER             (PIN_MODE_INPUT(GPIOF_OSC_IN) |         \
+                                     PIN_MODE_INPUT(GPIOF_OSC_OUT))
+#define VAL_GPIOF_OTYPER    0x00000000
 #define VAL_GPIOF_OSPEEDR   0xFFFFFFFF
 #define VAL_GPIOF_PUPDR     0x00000000
 #define VAL_GPIOF_ODR       0x00000000
-#define VAL_GPIOF_AFRL              (PIN_AFIO_AF(GPIOF_IMU_SDA, 4U)  |      \
-                                     PIN_AFIO_AF(GPIOF_IMU_SCL, 4U))
+#define VAL_GPIOF_AFRL      0x00000000
 #define VAL_GPIOF_AFRH      0x00000000
 
 #if !defined(_FROM_ASM_)
