@@ -106,7 +106,8 @@ LDSCRIPT= ../shared/STM32F302C8.ld
 vpath %.c ../shared/decadriver/
 vpath %.c ../shared/
 
-RADIOSRC = radiocomms.c decaplatform.c decafunctions.c deca_device.c deca_params_init.c
+RADIOSRC = radiocomms.c decaplatform.c decafunctions.c deca_device.c \
+           deca_params_init.c radioconf.c
 DRIVERSRC = flash.c exticonf.c nonvolatile.c usbconf.c
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
@@ -120,7 +121,9 @@ CSRC = $(STARTUPSRC) \
        $(BOARDSRC) \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        $(CHIBIOS)/os/various/shell.c \
-       usbconf.c main.c
+       $(DRIVERSRC) \
+       $(RADIOSRC) \
+       main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

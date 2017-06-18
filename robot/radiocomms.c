@@ -15,156 +15,47 @@
 // event triggered when new data has been received
 EVENTSOURCE_DECL(radioEvent);
 
-// RX/TX buffer
-#define RADIO_BUF_LEN 100
-static uint8_t radioBuffer[RADIO_BUF_LEN];
-
-static int deviceID = 0;
-static int sessionID = -1;
-
-// timestamp of the last start-of-frame
-static int64_t sofTS = -1;
-static systime_t sofSystime = 0xFFFFFFFF;
-
-// current date (timing for the dance)
-static uint16_t date = 0;
-
-// registered position (indicates when to listen)
-static int registered = 0;
-
-// robot data to receive/send
-struct robotData radioData;
-
-static void parseSOF(int sofLength) {
-	int i = 6;
-
-	// get start-of-frame reception time
-	sofTS = getRXtimestamp();
-	sofSystime = chVTGetSystemTime();
-
-	// check sessionID didn't change
-	if(sessionID == -1) {
-		sessionID = radioBuffer[2];
-	} else if(sessionID != radioBuffer[2]) {
-		// if it changed, restart sync
-		registered = 0;
-		sessionID = radioBuffer[2];
-		return;
-	}
-
-	// save date
-	date = radioBuffer[4] | (radioBuffer[5] << 8);
-
-	// search for the robot's ID in the list
-	while(i < sofLength && radioBuffer[i] != deviceID)
-		i++;
-
-	// if found, robot is known to be active by master beacon
-	if(i < sofLength)
-		registered = i - 5;
-	else
-		registered = 0;
-}
-
-static void parseRadioData(void) {
-	radioData.x = radioBuffer[2];
-	radioData.x |= radioBuffer[3] << 8;
-	radioData.y = radioBuffer[4];
-	radioData.y |= radioBuffer[5] << 8;
-	radioData.flags = radioBuffer[6];
-
-	if(radioData.flags & RB_FLAGS_CLR) {
-		clearStoredData();
-	} else if(radioData.flags & RB_FLAGS_WF) {
-		radioData.status |= RB_STATUS_WOK;
-	}
-
-	radioBuffer[2] = radioData.status;
-}
-
-static int messageRead(int msgID, int addr, uint64_t timeInFrame) {
+// measure the distance from the beacon to a robot and send some data if needed
+static int rangeRobot(int robotUID, int dataLength) {
 	int ret;
 
-	sleepUntil(sofSystime, timeInFrame - 1);
-	dwt_setdelayedtrxtime((sofTS  + timeInFrame*MS_TO_DWT - AHEAD_OF_TX_MARGIN) >> 8);
+	// make sure TX done bit is cleared
+	dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
-	ret = decaReceive(RADIO_BUF_LEN, radioBuffer, DWT_START_RX_DELAYED);
-	if(ret > 0) {
-		if(radioBuffer[0] == msgID && radioBuffer[1] == addr)
-			return ret;
+	// Send poll, and enable reception automatically to receive the answer
+	radioBuffer[0] = RANGING_MSG_ID;
+	radioBuffer[1] = robotUID;
+	decaSend(2 + dataLength, radioBuffer, 1, DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
+
+	// receive response
+	if((ret = decaReceive(RADIO_BUF_LEN, radioBuffer, NO_RX_ENABLE)) < 0)
+		return 0;
+
+	// check frame is actually our response
+	if (radioBuffer[0] == RANGING_MSG_ID && radioBuffer[1] == 0) {
+		double distance;
+		int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
+		int distanceInCm;
+
+		// Retrieve poll transmission and response reception timestamps
+		tx_ts = dwt_readtxtimestamplo32();
+		rx_ts = dwt_readrxtimestamplo32();
+
+		// retrieve beacon RX timestamp
+		beacon_rx_ts = (int) radioBuffer[2] + ((int) radioBuffer[3] << 8);
+		// compute precise time between beacon poll RX and response TX
+		beacon_hold_time = POLL_TO_RESP_DLY + TX_ANT_DLY - (beacon_rx_ts & 0x1FF);
+
+		// compute distance
+		distance = (rx_ts - tx_ts - beacon_hold_time) * 100 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
+		distanceInCm = distance + 200; // avoid negative values caused by wrong calibration of antenna delay
+
+		// if distance is still negative or 0, set it to 1 for debug
+		if(distanceInCm <= 0)
+			distanceInCm = 1;
+		return distanceInCm;
 	}
-
-	return -1;
-}
-
-static void synchronizeRadio(void) {
-	int ret, frameCounter = 0, retryDelay = 0;
-
-	// listen to master beacon
-	dwt_setrxtimeout(SYNC_RX_TIMEOUT);
-
-	setColor(33, 255, 128);
-
-	sofTS = -1;
-	while(sofTS == -1 || registered == 0) {
-		if((ret = decaReceive(RADIO_BUF_LEN, radioBuffer, DWT_START_RX_IMMEDIATE)) < 0) {
-			// no valid message received
-			sofTS = -1;
-			// allow module to cool down ten times longer
-			chThdSleepMilliseconds(SYNC_RX_TIMEOUT/100);
-			continue;
-		}
-
-		// message is a start of frame
-		if(radioBuffer[0] == SOF_MSG_ID && radioBuffer[1] == 0xFF) {
-			parseSOF(ret);
-
-			// synchronized if registered
-			if(registered)
-				continue;
-
-			// retry to register after a random number of frames
-			if(frameCounter == retryDelay) {
-				ret = messageRead(NEW_ROBOT_MSG_ID, 0xFF, FRAME_LENGTH - TIMESLOT_LENGTH);
-				if(ret == 3 && radioBuffer[2] != 0) {
-					uint32_t uid = dwt_getpartid();
-					deviceID = radioBuffer[2];
-
-					radioBuffer[1] = 0;
-					radioBuffer[2] = uid;
-					radioBuffer[3] = uid >> 8;
-					radioBuffer[4] = uid >> 16;
-					decaSend(5, radioBuffer, 1, DWT_START_TX_IMMEDIATE);
-				}
-
-				frameCounter = 0;
-				ret = dwt_readrxtimestamplo32();
-				retryDelay = ((ret >> 8) + (ret >> 16)) & 0x1F;
-			}
-			frameCounter++;
-
-			sleepUntil(sofSystime, FRAME_LENGTH - 4);
-		}
-	}
-	dwt_setrxtimeout(RX_TIMEOUT);
-
-	releaseColor();
-}
-
-// reply to the beacons
-static void rangingResponse(int sendStatus) {
-	// Retrieve poll reception timestamp
-	uint64_t rxTS = getRXtimestamp();
-
-	// set response message transmission time
-	dwt_setdelayedtrxtime((rxTS + POLL_TO_RESP_DLY) >> 8);
-
-	// send the response message
-	radioBuffer[1] = 0;
-	radioBuffer[2] = rxTS;
-	radioBuffer[3] = rxTS >> 8;
-	radioBuffer[4] = radioData.status;
-	decaSend(4 + sendStatus, radioBuffer, 1, DWT_START_TX_DELAYED);
+	return 0;
 }
 
 static THD_WORKING_AREA(waRadio, 512);

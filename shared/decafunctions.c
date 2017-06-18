@@ -1,107 +1,97 @@
 #include "ch.h"
+#include "hal.h"
 #include "chevents.h"
 
-#include "exticonf.h"
 #include "decaplatform.h"
 #include "decafunctions.h"
 #include "decadriver/deca_device_api.h"
 #include "decadriver/deca_regs.h"
+#include "radioconf.h"
 
-// communication configuration
-static const dwt_config_t radioConfig = {
-	2,               // Channel number
-	DWT_PRF_64M,     // Pulse repetition frequency
-	DWT_PLEN_256,    // Preamble length. Used in TX only
-	DWT_PAC16,        // Preamble acquisition chunk size. Used in RX only
-	9,               // TX preamble code. Used in TX only
-	9,               // RX preamble code. Used in RX only
-	1,               // 0 to use standard SFD, 1 to use non-standard SFD
-	DWT_BR_6M8,      // Data rate
-	DWT_PHRMODE_STD, // PHY header mode
-	(257 + 8 - 16)    // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only
-};
+// RX/TX buffer
+uint8_t radioBuffer[RADIO_BUF_LEN];
 
-int decaInit(void) {
-	// initialize peripherals used by decawave module
-	initDecaPlatform();
-	// reset module
-	dwt_softreset();
-	chThdSleepMilliseconds(3);
-	// initialize for ranging
-	if (dwt_initialise(DWT_LOADUCODE) == DWT_ERROR) {
-		return -1;
+// timestamp of the last start-of-frame
+static int64_t sofTS = -1;
+static systime_t sofSystime = -1;
+
+static void startOfFrameTime(int isSOFsender) {
+	// get start-of-frame reception time
+	sofTS = isSOFsender ? getTXtimestamp() : getRXtimestamp();
+	sofSystime = chVTGetSystemTime();
+}
+
+void synchronizeOnSOF(int isSOFsender) {
+	int ret;
+
+	if(isSOFsender) {
+		radioBuffer[0] = 0x50;
+		if(sofTS == -1) {
+			decaSend(1, radioBuffer, 1, DWT_START_TX_IMMEDIATE);
+		} else {
+			messageSend(FRAME_LENGTH*TIMESLOT_LENGTH, 0, 1);
+		}
+		startOfFrameTime(1); // store SOF time
+	} else {
+		dwt_setrxtimeout(SYNC_RX_TIMEOUT);
+		if(sofTS != -1) { // if we are already synchronized
+			ret = messageReceive(FRAME_LENGTH*TIMESLOT_LENGTH);
+			if(ret == 1 && radioBuffer[0] == 0x50) // check we actually received a SOF
+				startOfFrameTime(0); // if that the case store SOF time
+			else // if SOF hasn't be received, resync
+				sofTS = -1;
+		}
+		while(sofTS == -1) { // while we're not synchronized with SOF
+			palClearLine(LINE_LED_SYNC);
+			ret = decaReceive(RADIO_BUF_LEN, radioBuffer, DWT_START_RX_IMMEDIATE);
+			if(ret < 0) // on timeout, allow module to cool down ten times longer
+				chThdSleepMilliseconds(SYNC_RX_TIMEOUT/100);
+			else if(ret == 1 && radioBuffer[0] == 0x50) // check we actually received a SOF
+				startOfFrameTime(0); // if that the case store SOF time
+		}
+		dwt_setrxtimeout(RX_TIMEOUT);
 	}
-	// after initialize, use fast SPI for optimum performance
-	useFastSPI();
+	palSetLine(LINE_LED_SYNC);
+}
 
-	dwt_configure(&radioConfig);
-	// Apply default antenna delay value.
-	dwt_setrxantennadelay(RX_ANT_DLY);
-	dwt_settxantennadelay(TX_ANT_DLY);
-	// activate interrupts for tx done, rx done, rx errors and timeout
-	dwt_setinterrupt(SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR | SYS_STATUS_ALL_RX_TO | SYS_STATUS_TXFRS, 1);
+int messageReceive(uint64_t timeInFrame) {
+	int ret;
+
+	sleepUntil(sofSystime, timeInFrame - 1);
+	dwt_setdelayedtrxtime((sofTS  + timeInFrame*MS_TO_DWT - AHEAD_OF_TX_MARGIN) >> 8);
+
+	ret = decaReceive(RADIO_BUF_LEN, radioBuffer, DWT_START_RX_DELAYED);
+	if(ret > 0)
+		return ret;
+
+	return -1;
+}
+
+int messageAnswer(int size) {
+	// Retrieve poll reception timestamp
+	uint64_t rxTS = getRXtimestamp();
+	// set response message transmission time
+	dwt_setdelayedtrxtime((rxTS + POLL_TO_RESP_DLY) >> 8);
+	// send the response message
+	radioBuffer[0] = rxTS;
+	radioBuffer[1] = rxTS >> 8;
+	return decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED);
+}
+
+int messageSend(int timeInFrame, int expectAnswer, int size) {
+	sleepUntil(sofSystime, timeInFrame - 1);
+	dwt_setdelayedtrxtime((sofTS  + timeInFrame*MS_TO_DWT) >> 8);
+
+	// make sure TX done bit is cleared
+	dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+
+	// send message and receive answer if expected
+	if(expectAnswer) {
+		if(decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED) < 0)
+			return -4;
+		return decaReceive(RADIO_BUF_LEN, radioBuffer, NO_RX_ENABLE);
+	} else if(decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED) < 0)
+		return -4;
 
 	return 0;
-}
-
-int decaSend(int size, uint8_t *buffer, int ranging, int flags) {
-	int ret;
-	dwt_writetxdata(size + 2, buffer, 0);
-	dwt_writetxfctrl(size + 2, 0, ranging);
-	ret = dwt_starttx(flags);
-
-	if(ret == DWT_SUCCESS) {
-		// wait until message is sent
-		chEvtWaitAny(ALL_EVENTS);
-		// Clear TXFRS event
-		dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-	}
-	return ret;
-}
-
-int decaReceive(int maxSize, uint8_t *buffer, int flag) {
-	int messageLength;
-	uint32_t status_reg;
-
-	// activate reception
-	if(flag != NO_RX_ENABLE)
-		dwt_rxenable(flag);
-
-	chEvtWaitAny(ALL_EVENTS);
-	status_reg = dwt_read32bitreg(SYS_STATUS_ID);
-
-	if (status_reg & SYS_STATUS_RXFCG) {
-		// Clear good RX frame event in the DW1000 status register.
-		dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG);
-
-		// read the message
-		messageLength = dwt_read32bitreg(RX_FINFO_ID) & RX_FINFO_RXFL_MASK_1023;
-		if (messageLength <= maxSize) {
-			dwt_readrxdata(buffer, messageLength, 0);
-			return messageLength - 2;
-		} else {
-			return -3; // error : buffer is too small
-		}
-	} else {
-		// Clear RX error events in the DW1000 status register.
-		dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-		// Reset RX to properly reinitialise LDE operation. (User Manual p.34)
-		dwt_rxreset();
-		return (status_reg & SYS_STATUS_ALL_RX_TO) ? -2 : -1;
-	}
-}
-
-// adapted from a code by Samuel Tardieu (see rfc1149.net)
-void sleepUntil(systime_t previous, int period) {
-	systime_t future = previous + period*CH_CFG_ST_FREQUENCY/1000*512/499.2;
-
-	chSysLock();
-	systime_t now = chVTGetSystemTimeX();
-
-	int mustDelay = now < previous ?
-		(now < future && future < previous) :
-		(now < future || future < previous);
-	if (mustDelay)
-		chThdSleepS(future - now);
-	chSysUnlock();
 }

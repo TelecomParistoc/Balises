@@ -16,21 +16,6 @@
 /* required time between RX enable and actual RX */
 #define AHEAD_OF_TX_MARGIN 200*UUS_TO_DWT_TIME
 
-/* total length of a frame in ms */
-#define FRAME_LENGTH 100
-
-/* time slot length in ms */
-#define TIMESLOT_LENGTH 2
-
-/* maximum supported number of connected robots */
-#define MAX_CONNECTED_ROBOTS 15
-
-// Radio message IDs
-#define SOF_MSG_ID 0x23
-#define BEACON_READ_MSG_ID 0x32
-#define RANGING_MSG_ID 0x42
-#define NEW_ROBOT_MSG_ID 0x2A
-
 // flags bits :
 #define RB_FLAGS_DEN 0x01   // dance enable
 #define RB_FLAGS_WF 0x02    // write flash
@@ -47,5 +32,25 @@
 #define BATTERY_LOW 1
 #define BATTERY_OK 2
 #define BATTERY_HIGH 3
+
+/* system IDs : */
+#define BEACON1_ID  0x01
+#define BEACON2_ID  0x02
+#define BEACON3_ID  0x04
+#define BIGFOE_ID   0x08
+#define SMALLFOE_ID 0x10
+#define BIGBOT_ID   0x20
+#define SMALLBOT_ID 0x40
+
+/* time slot length in ms */
+#define TIMESLOT_LENGTH 2
+
+/* total length of a frame in number of time slots */
+#define FRAME_LENGTH 17
+
+/* parts that should be transmitting in each time slot (defined in radioconf.c) */
+extern const char TXtimeTable[];
+/* parts that should be listening in each time slot (defined in radioconf.c) */
+extern const char RXtimeTable[];
 
 #endif

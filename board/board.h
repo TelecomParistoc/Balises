@@ -22,11 +22,11 @@
 #define STM32_LSEDRV                (3U << 3U)
 
 #if !defined(STM32_HSECLK)
-#define STM32_HSECLK                8000 000U
+#define STM32_HSECLK                8000000U
 #endif
 
 #define STM32_LSE_BYPASS
-#define STM32_HSE_BYPASS
+//#define STM32_HSE_BYPASS
 
 /*
  * MCU type as defined in the ST header.
@@ -83,9 +83,9 @@
 #define LINE_USB_CONNECT           PAL_LINE(GPIOA, GPIOA_USB_CONNECT)
 #define LINE_DWM_IRQ               PAL_LINE(GPIOA, GPIOA_DWM_IRQ)
 
-#define LINE_DWM_nCS               PAL_LINE(GPIOB, GPIOB_RCODA)
-#define LINE_DWM_RST               PAL_LINE(GPIOB, GPIOB_LCODA)
-#define LINE_MOT_nCS               PAL_LINE(GPIOB, GPIOB_RCODB)
+#define LINE_DWM_nCS               PAL_LINE(GPIOB, GPIOB_DWM_nCS)
+#define LINE_DWM_RST               PAL_LINE(GPIOB, GPIOB_DWM_RST)
+#define LINE_MOT_nCS               PAL_LINE(GPIOB, GPIOB_MOT_nCS)
 
 #define LINE_LED_BATT              PAL_LINE(GPIOC, GPIOC_LED_BATT)
 #define LINE_LED_RXTX              PAL_LINE(GPIOC, GPIOC_LED_RXTX)

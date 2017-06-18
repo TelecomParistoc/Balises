@@ -1,58 +1,38 @@
 #ifndef DECAFUNTIONS_H
 #define DECAFUNTIONS_H
 
-/* Default antenna delay values for 64 MHz PRF */
-#define TX_ANT_DLY 16393
-#define RX_ANT_DLY 16393
+/* RX/TX buffer (size = RADIO_BUF_LEN)
+ * write here bytes to send, read here bytes received */
+#define RADIO_BUF_LEN 50
+extern uint8_t radioBuffer[];
 
-/* Speed of light in air, in metres per second */
-#define SPEED_OF_LIGHT 299702547
+/* generate or wait for start-of-frame message. Calling this is required to give
+ * a time reference to the other functions.
+ *    isSOFsender : 1 if device emits start-of-frame message, 0 otherwise */
+void synchronizeOnSOF(int isSOFsender);
 
-/* millisecond to decawave time unit conversion factor */
-#define MS_TO_DWT ((int64_t) 1000*UUS_TO_DWT_TIME)
+/* Receive a message at the given time and write it in radioBuffer.
+ * Returns the number of bytes sent or -1 if receiver timed out.
+ *    timeInFrame : delay after SOF in UWB ms (1 UWB ms = 1.02 ms) when message
+ *      is received */
+int messageReceive(uint64_t timeInFrame);
 
-/* UWB microsecond (uus) to device time unit (dtu, around 15.65 ps) conversion factor.
- * 1 uus = 512 / 499.2 us and 1 us = 499.2 * 128 dtu. */
-#define UUS_TO_DWT_TIME 65536
+/* Answer to a message. Answer data shall be stored in radioBuffer.
+ * Answer is sent POLL_TO_RESP_DLY after message reception.
+ * First two bytes of the answer will be used to send RX timestamp and MUST BE
+ * left blank, but included in size.
+ * Returns -1 for transmission error.
+ *    size : size of the answer message in bytes */
+int messageAnswer(int size);
 
-/* returns RX timestamp (40bit wide) */
-#define getRXtimestamp() (((uint64_t) dwt_readrxtimestamplo32()) | (((uint64_t) dwt_readrxtimestamphi32()) << 8))
-
-/* returns RX timestamp (40bit wide) */
-#define getTXtimestamp() (((uint64_t) dwt_readtxtimestamplo32()) | (((uint64_t) dwt_readtxtimestamphi32()) << 8))
-
-/* initialize the peripherals and the Decawave module */
-int decaInit(void);
-
-/* switch SPI speed to 10.4MHz*/
-void useFastSPI(void);
-
-/* change radio channel used for transmissions */
-#define MB_CHANNEL 2
-#define SB1_CHANNEL 3
-#define SB2_CHANNEL 4
-void switchToChannel(int channel);
-
-/* send a message :
- * 		size : the size of the message in bytes
- *		buffer : pointer to the message data
- *		ranging : 1 if message is used for ranging (i.e. timestamps will be used), 0 otherwise
- *		flags : tx flags (see decadriver's dwt_starttx)
- * returns 0 for success, -1 for failure (see decadriver's dwt_starttx)
- */
-int decaSend(int size, uint8_t *buffer, int ranging, int flags);
-
-/* activate receiver and wait for a message
- * 		maxSize : the maximum length of the message to receive
- * 		buffer : buffer to write the message in
- *		flag : DWT_START_RX_IMMEDIATE, DWT_START_RX_DELAYED or NO_RX_ENABLE
- * returns number of bytes read for successfully received message,
- *  	-1 for receive error, -2 for timeout, -3 for message too long
- */
-#define NO_RX_ENABLE -1
-int decaReceive(int maxSize, uint8_t *buffer, int flag);
-
-/* wait until period (in UWB ms) has elapsed after previous (in systick) */
-void sleepUntil(systime_t previous, int period);
+/* send a message (read from radioBuffer) and receive answer if required.
+ * Returns -4 for transmission error, -1 for reception error or number of bytes
+ * received if no error happened.
+ *    timeInFrame : delay after SOF in UWB ms (1 UWB ms = 1.02 ms) when message
+ *      is sent
+ *    expectAnswer : 1 if receiver will sent back an answer, 0 otherwise.
+ *    size : size of the message in bytes (message shall be written in
+ *      radioBuffer) */
+int messageSend(int timeInFrame, int expectAnswer, int size);
 
 #endif
