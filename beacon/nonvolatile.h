@@ -4,7 +4,7 @@
 #include "ch.h"
 
 /* ID of the device, see defines in shared/radioconf.h */
-extern uint8_t deviceUID;
+extern volatile uint8_t deviceUID;
 
 /* ############## Shell command callbacks ############## */
 

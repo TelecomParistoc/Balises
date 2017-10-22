@@ -6,8 +6,8 @@
 #include "nonvolatile.h"
 #include "../shared/flash.h"
 
-// ID of the beacon : 0 for mb, 253 for sb1, 254 for sb2
-uint8_t deviceUID __attribute__((section(".flashdata")));
+// ID of the beacon
+volatile uint8_t deviceUID __attribute__((section(".flashdata")));
 
 /* set ID of the device (write it in flash).
 * USAGE: setid <NEW ID> */

@@ -6,18 +6,21 @@
 #include "usbconf.h"
 #include "exticonf.h"
 #include "radiocomms.h"
+#include "nonvolatile.h"
 // #include "robot.h"
 // #include "battery.h"
 
 static THD_WORKING_AREA(waShell, 1024);
 
-static const ShellCommand SBshCmds[] = {
+static const ShellCommand shCmds[] = {
+	{"setid", setDeviceUID},
+	{"getid", getDeviceUID},
 	{NULL, NULL}
 };
 
 static ShellConfig shConfig = {
 	(BaseSequentialStream *) &SDU1,
-	SBshCmds
+	shCmds
 };
 
 int main(void) {
@@ -36,17 +39,15 @@ int main(void) {
 	// start radio thread
 	startRadio();
 
+
 	while(1) {
 		if(!sh && SDU1.config->usbp->state == USB_ACTIVE) {
 			sh = shellCreateStatic(&shConfig, waShell, 1024, NORMALPRIO);
 		}
-		palSetLine(LINE_LED_SYNC);
+
 		palSetLine(LINE_LED_RXTX);
-		palSetLine(LINE_LED_BATT);
-		chThdSleepMilliseconds(50);
-		palClearLine(LINE_LED_SYNC);
+		chThdSleepMilliseconds(500);
 		palClearLine(LINE_LED_RXTX);
-		palClearLine(LINE_LED_BATT);
-		chThdSleepMilliseconds(50);
+		chThdSleepMilliseconds(500);
 	}
 }

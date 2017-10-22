@@ -16,18 +16,7 @@
 /* required time between RX enable and actual RX */
 #define AHEAD_OF_TX_MARGIN 200*UUS_TO_DWT_TIME
 
-// flags bits :
-#define RB_FLAGS_DEN 0x01   // dance enable
-#define RB_FLAGS_WF 0x02    // write flash
-#define RB_FLAGS_PTSTR 0x04 // store points
-#define RB_FLAGS_CLSTR 0x08 // store colors
-#define RB_FLAGS_CLR 0x10   // clear stored data
-
-// status bits :
-#define RB_STATUS_BATT 0x03 // battery state
-#define RB_STATUS_WOK 0x04 // write OK
-
-// battery state codes
+/* battery state codes */
 #define BATTERY_VERYLOW 0
 #define BATTERY_LOW 1
 #define BATTERY_OK 2

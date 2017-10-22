@@ -26,7 +26,7 @@ void parseRobotData(int robotID, int size) {
 	// TODO
 }
 
-static THD_WORKING_AREA(waRadio, 256);
+static THD_WORKING_AREA(waRadio, 512);
 static THD_FUNCTION(radioThread, th_data) {
 	event_listener_t evt_listener;
 	int ret;
@@ -36,7 +36,7 @@ static THD_FUNCTION(radioThread, th_data) {
 
 	// initialize decawave module
 	chEvtRegisterMask(&deca_event, &evt_listener, EVENT_MASK(0));
-	decaInit();
+	if(decaInit() == 0) palSetLine(LINE_LED_BATT); // TODO : remove palSetLine
 
 	while(1) {
 		synchronizeOnSOF(deviceUID == BEACON1_ID);

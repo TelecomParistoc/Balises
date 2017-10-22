@@ -15,7 +15,7 @@
 static const SPIConfig slowspiconfig = {
 	NULL,
 	GPIOB,
-	GPIOB_DWM_nCS ,
+	GPIOB_DWM_nCS,
 	SPI_CR1_BR_1 | SPI_CR1_BR_0,
 	0
 };
