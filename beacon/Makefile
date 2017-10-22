@@ -101,7 +101,7 @@ include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 
 # Define linker script file here
-LDSCRIPT= ../shared/STM32F302C8.ld
+LDSCRIPT= ../shared/STM32F302C6.ld
 
 vpath %.c ../shared/decadriver/
 vpath %.c ../shared/
@@ -227,11 +227,11 @@ RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
 
 debugserver:
-	JLinkGDBServer -if swd -device "STM32F302C8" -LocalhostOnly
+	JLinkGDBServer -if swd -device "STM32F302C6" -LocalhostOnly
 
 debug: all
 	-killall JLinkGDBServer
-	JLinkGDBServer -if swd -device "STM32F302C8" -LocalhostOnly&
+	JLinkGDBServer -if swd -device "STM32F302C6" -LocalhostOnly&
 	$(GDB) build/$(PROJECT).elf
 
 .PHONY: debug debugserver
