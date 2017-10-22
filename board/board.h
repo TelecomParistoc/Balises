@@ -175,7 +175,7 @@
  * PB9  - RPI_SDA                   (alternate 4 open drain).
  * PB10 - RPI_TX                    (alternate 7).
  * PB11 - RPI_RX                    (alternate 7).
- * PB12 - MOT_nCS                   (alternate 5).
+ * PB12 - MOT_nCS                   (output push-pull).
  * PB13 - MOT_SCK                   (alternate 5).
  * PB14 - MOT_MISO                  (alternate 5).
  * PB15 - MOT_MOSI                  (alternate 5).
@@ -192,7 +192,7 @@
                                      PIN_MODE_ALTERNATE(GPIOB_RPI_SDA) |    \
                                      PIN_MODE_ALTERNATE(GPIOB_RPI_TX) |     \
                                      PIN_MODE_ALTERNATE(GPIOB_RPI_RX) |     \
-                                     PIN_MODE_ALTERNATE(GPIOB_MOT_nCS) |    \
+                                     PIN_MODE_OUTPUT(GPIOB_MOT_nCS) |       \
                                      PIN_MODE_ALTERNATE(GPIOB_MOT_SCK) |    \
                                      PIN_MODE_ALTERNATE(GPIOB_MOT_MISO) |   \
                                      PIN_MODE_ALTERNATE(GPIOB_MOT_MOSI))
@@ -206,12 +206,11 @@
                                      PIN_AFIO_AF(GPIOB_DWM_MOSI, 6U))
 #define VAL_GPIOB_AFRH              (PIN_AFIO_AF(GPIOB_RPI_SCL, 4U) |       \
                                      PIN_AFIO_AF(GPIOB_RPI_SDA, 4U) |       \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 7U) |       \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 7U) |       \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U) |       \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U) |       \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U) |       \
-                                     PIN_AFIO_AF(GPIOB_RPI_SDA, 5U))
+                                     PIN_AFIO_AF(GPIOB_RPI_TX, 7U) |       \
+                                     PIN_AFIO_AF(GPIOB_RPI_RX, 7U) |       \
+                                     PIN_AFIO_AF(GPIOB_MOT_SCK, 5U) |       \
+                                     PIN_AFIO_AF(GPIOB_MOT_MISO, 5U) |       \
+                                     PIN_AFIO_AF(GPIOB_MOT_MOSI, 5U))
 
 /*
  * GPIOC setup:
