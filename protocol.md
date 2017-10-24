@@ -76,7 +76,7 @@ when the R marker is received
 * the robot module receives the response, save the value of the ranging timer
 when the R marker is received and computes the time of flight
 
-[[twr-ss.jpeg]]
+![twr-ss](https://raw.githubusercontent.com/TelecomParistoc/Beacons/twr-ss.jpeg)
 
 ## Remote serial port
 
