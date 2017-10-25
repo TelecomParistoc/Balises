@@ -11,7 +11,7 @@ during a game. It is composed of the following elements:
 * 3 fixed beacons (B1, B2, B3)
 * a module on each of our robots : BB (big bot) and SB (small bot)
 * a module on each of the other team robots : BF (big foe) and SF (small foe)
-
+ 
 ## General principles
 
 * Time is divided in **frames** of constant and pre-defined length.
@@ -76,7 +76,7 @@ when the R marker is received
 * the robot module receives the response, save the value of the ranging timer
 when the R marker is received and computes the time of flight
 
-![twr-ss](https://raw.githubusercontent.com/TelecomParistoc/Beacons/twr-ss.jpeg)
+![twr-ss](/twr-ss.jpeg)
 
 ## Remote serial port
 
