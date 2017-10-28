@@ -24,33 +24,37 @@ static void startOfFrameTime(int isSOFsender) {
 void synchronizeOnSOF(int isSOFsender) {
 	int ret;
 
+	// if module is responsible for sending SOF sync message
 	if(isSOFsender) {
 		radioBuffer[0] = SOF_MSG;
 		if(sofTS == -1) {
+			dwt_setrxtimeout(RX_TIMEOUT);
 			decaSend(1, radioBuffer, 1, DWT_START_TX_IMMEDIATE);
 		} else {
 			messageSend(FRAME_LENGTH*TIMESLOT_LENGTH, 0, 1);
 		}
 		startOfFrameTime(1); // store SOF time
+		return;
+	}
+
+	// if module is a SOF receiver
+	if(sofTS != -1) { // if we are already synchronized
+		ret = messageReceive(FRAME_LENGTH*TIMESLOT_LENGTH);
+		if(ret == 1 && radioBuffer[0] == SOF_MSG) // check we actually received a SOF
+			startOfFrameTime(0); // if that the case store SOF time
+		else // if SOF hasn't be received, resync
+			sofTS = -1;
 	} else {
-		if(sofTS != -1) { // if we are already synchronized
-			ret = messageReceive(FRAME_LENGTH*TIMESLOT_LENGTH);
-			if(ret == 1 && radioBuffer[0] == SOF_MSG) // check we actually received a SOF
+		dwt_setrxtimeout(SYNC_RX_TIMEOUT);
+		while(sofTS == -1) { // while we're not synchronized with SOF
+			palClearLine(LINE_LED_SYNC);
+			ret = decaReceive(RADIO_BUF_LEN, radioBuffer, DWT_START_RX_IMMEDIATE);
+			if(ret < 0) // on timeout, allow module to cool down ten times longer
+				chThdSleepMilliseconds(SYNC_RX_TIMEOUT/100);
+			else if(ret == 1 && radioBuffer[0] == SOF_MSG) // check we actually received a SOF
 				startOfFrameTime(0); // if that the case store SOF time
-			else // if SOF hasn't be received, resync
-				sofTS = -1;
-		} else {
-			dwt_setrxtimeout(SYNC_RX_TIMEOUT);
-			while(sofTS == -1) { // while we're not synchronized with SOF
-				palClearLine(LINE_LED_SYNC);
-				ret = decaReceive(RADIO_BUF_LEN, radioBuffer, DWT_START_RX_IMMEDIATE);
-				if(ret < 0) // on timeout, allow module to cool down ten times longer
-					chThdSleepMilliseconds(SYNC_RX_TIMEOUT/100);
-				else if(ret == 1 && radioBuffer[0] == SOF_MSG) // check we actually received a SOF
-					startOfFrameTime(0); // if that the case store SOF time
-			}
-			dwt_setrxtimeout(RX_TIMEOUT);
 		}
+		dwt_setrxtimeout(RX_TIMEOUT);
 	}
 	palSetLine(LINE_LED_SYNC);
 }

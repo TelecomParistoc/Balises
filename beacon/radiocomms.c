@@ -56,6 +56,10 @@ static THD_FUNCTION(radioThread, th_data) {
 				}
 			}
 		}
+
+		// for BEACON 1, update SYNC LED status
+		if(deviceUID == BEACON1_ID)
+			palWriteLine(LINE_LED_SYNC, connectedDevices != 0)
 	}
 }
 
