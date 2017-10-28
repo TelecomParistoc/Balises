@@ -342,7 +342,7 @@ void initUSB(void) {
 
 	// activate USB driver and connect it
 	palClearLine(LINE_USB_CONNECT);
-	chThdSleepMilliseconds(1500);
+	chThdSleepMilliseconds(500);
 	usbStart(serusbcfg.usbp, &usbcfg);
 	palSetLine(LINE_USB_CONNECT);
 

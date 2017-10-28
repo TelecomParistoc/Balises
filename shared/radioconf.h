@@ -16,11 +16,10 @@
 /* required time between RX enable and actual RX */
 #define AHEAD_OF_TX_MARGIN 200*UUS_TO_DWT_TIME
 
-/* battery state codes */
-#define BATTERY_VERYLOW 0
-#define BATTERY_LOW 1
-#define BATTERY_OK 2
-#define BATTERY_HIGH 3
+/* message IDs : */
+#define SOF_MSG 0x50
+#define RANGE_MSG 0x23
+#define DATA_MSG 0x32
 
 /* system IDs : */
 #define BEACON1_ID  0x01

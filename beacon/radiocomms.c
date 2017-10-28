@@ -10,11 +10,11 @@
 #include "../shared/decafunctions.h"
 #include "nonvolatile.h"
 
-
 // register the device sending messages when they are supposed to
 uint8_t connectedDevices = 0;
+// ID of the robot connected to remote serial port (if any)
+uint8_t serialID = 0;
 
-//
 int sendShellData(void) {
 	// TODO
 	return 0;
@@ -41,14 +41,14 @@ static THD_FUNCTION(radioThread, th_data) {
 	while(1) {
 		synchronizeOnSOF(deviceUID == BEACON1_ID);
 		for(int i=1; i<FRAME_LENGTH; i++) {
-			// if beacon is suppose to receive a message
+			// if beacon is supposed to receive a message
 			if(deviceUID & RXtimeTable[i]) {
 				ret = messageReceive(i*TIMESLOT_LENGTH);
 				// if it's a ranging message
-				if(ret == 1 && radioBuffer[0] == 0x23 && deviceUID == RXtimeTable[i]) {
+				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i]) {
 					messageAnswer(sendShellData()+2);
 					connectedDevices |= TXtimeTable[i];
-				} else if(ret > 1) { // if it's a robot data message
+				} else if(ret > 1 && radioBuffer[0] == DATA_MSG) { // if it's a robot data message
 					parseRobotData(TXtimeTable[i], ret);
 					connectedDevices |= TXtimeTable[i];
 				} else {
