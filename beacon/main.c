@@ -7,7 +7,7 @@
 #include "exticonf.h"
 #include "radiocomms.h"
 #include "nonvolatile.h"
-// #include "robot.h"
+#include "remoteserial.h"
 // #include "battery.h"
 
 static THD_WORKING_AREA(waShell, 1024);
@@ -15,6 +15,12 @@ static THD_WORKING_AREA(waShell, 1024);
 static const ShellCommand shCmds[] = {
 	{"setid", setDeviceUID},
 	{"getid", getDeviceUID},
+	{"big", openRemoteSerialBig},
+	{"small", openRemoteSerialSmall},
+	{"bbpos", showPositionBig},
+	{"sbpos", showPositionSmall},
+	{"bfpos", showPositionBigFoe},
+	{"sfpos", showPositionSmallFoe},
 	{NULL, NULL}
 };
 

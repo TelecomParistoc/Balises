@@ -78,8 +78,9 @@ int messageAnswer(int size) {
 	// set response message transmission time
 	dwt_setdelayedtrxtime((rxTS + POLL_TO_RESP_DLY) >> 8);
 	// send the response message
-	radioBuffer[0] = rxTS;
-	radioBuffer[1] = rxTS >> 8;
+	radioBuffer[0] = RANGE_MSG;
+	radioBuffer[1] = rxTS;
+	radioBuffer[2] = rxTS >> 8;
 	return decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED);
 }
 

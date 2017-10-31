@@ -3,7 +3,7 @@
 
 /* RX/TX buffer (size = RADIO_BUF_LEN)
  * write here bytes to send, read here bytes received */
-#define RADIO_BUF_LEN 50
+#define RADIO_BUF_LEN 108
 extern uint8_t radioBuffer[];
 
 /* generate or wait for start-of-frame message. Calling this is required to give
@@ -19,8 +19,8 @@ int messageReceive(uint64_t timeInFrame);
 
 /* Answer to a message. Answer data shall be stored in radioBuffer.
  * Answer is sent POLL_TO_RESP_DLY after message reception.
- * First two bytes of the answer will be used to send RX timestamp and MUST BE
- * left blank, but included in size.
+ * First three bytes of the answer will be used to send RX timestamp and MUST BE
+ * left blank, but INCLUDED IN THE SIZE.
  * Returns -1 for transmission error.
  *    size : size of the answer message in bytes */
 int messageAnswer(int size);

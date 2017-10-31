@@ -123,7 +123,7 @@ CSRC = $(STARTUPSRC) \
        $(CHIBIOS)/os/various/shell.c \
        $(DRIVERSRC) \
        $(RADIOSRC) \
-       main.c
+       main.c remoteserial.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -191,7 +191,7 @@ AOPT =
 TOPT = -mthumb -DTHUMB
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes -Wno-strict-aliasing
 
 # Define C++ warning options here
 CPPWARN = -Wall -Wextra -Wundef
