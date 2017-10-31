@@ -11,7 +11,7 @@ during a game. It is composed of the following elements:
 * 3 fixed beacons (B1, B2, B3)
 * a module on each of our robots : BB (big bot) and SB (small bot)
 * a module on each of the other team robots : BF (big foe) and SF (small foe)
- 
+
 ## General principles
 
 * Time is divided in **frames** of constant and pre-defined length.
@@ -38,11 +38,11 @@ the same time slot, when ranging). <br>
 | 1         | ranging |    |    | RX |    |    | TX |    |
 | 3         | ranging |    | RX |    |    |    | TX |    |
 | 2         | ranging | RX |    |    |    |    | TX |    |
-| 4         | data    |    |    |    | RX | RX | TX |    |
+| 4         | data    |(RX)|(RX)|(RX)| RX | RX | TX |    |
 | 5         | ranging |    |    | RX |    |    |    | TX |
 | 6         | ranging |    | RX |    |    |    |    | TX |
 | 7         | ranging | RX |    |    |    |    |    | TX |
-| 8         | data    |    |    |    | RX | RX |    | TX |
+| 8         | data    |(RX)|(RX)|(RX)| RX | RX |    | TX |
 | 9         | ranging |    |    | RX | TX |    |    |    |
 | 10        | ranging |    | RX |    | TX |    |    |    |
 | 11        | ranging | RX |    |    | TX |    |    |    |
