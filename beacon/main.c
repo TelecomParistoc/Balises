@@ -8,7 +8,7 @@
 #include "radiocomms.h"
 #include "nonvolatile.h"
 #include "remoteserial.h"
-// #include "battery.h"
+#include "../shared/battery.h"
 
 static THD_WORKING_AREA(waShell, 1024);
 
@@ -39,12 +39,11 @@ int main(void) {
 
 	// initialize hardware
 	initExti();
-	// initBattery();
+	initBattery();
 	initUSB();
 
 	// start radio thread
 	startRadio();
-
 
 	while(1) {
 		if(!sh && SDU1.config->usbp->state == USB_ACTIVE) {
