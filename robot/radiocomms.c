@@ -33,9 +33,8 @@ static int rangeRobot(int robotUID, int dataLength) {
 
 	// check frame is actually our response
 	if (radioBuffer[0] == RANGING_MSG_ID && radioBuffer[1] == 0) {
-		double distance;
+		int distance;
 		int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
-		int distanceInCm;
 
 		// Retrieve poll transmission and response reception timestamps
 		tx_ts = dwt_readtxtimestamplo32();
@@ -47,13 +46,9 @@ static int rangeRobot(int robotUID, int dataLength) {
 		beacon_hold_time = POLL_TO_RESP_DLY + TX_ANT_DLY - (beacon_rx_ts & 0x1FF);
 
 		// compute distance
-		distance = (rx_ts - tx_ts - beacon_hold_time) * 100 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
-		distanceInCm = distance + 200; // avoid negative values caused by wrong calibration of antenna delay
+		distance = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
 
-		// if distance is still negative or 0, set it to 1 for debug
-		if(distanceInCm <= 0)
-			distanceInCm = 1;
-		return distanceInCm;
+		return distance;
 	}
 	return 0;
 }
