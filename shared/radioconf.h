@@ -30,6 +30,11 @@
 #define BIGBOT_ID   0x20
 #define SMALLBOT_ID 0x40
 
+/* beacons position */
+#define X2 3000
+#define X3 1500
+#define Y3 2000
+
 /* time slot length in ms */
 #define TIMESLOT_LENGTH 2
 
