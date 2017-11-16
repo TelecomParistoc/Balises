@@ -30,7 +30,7 @@ int messageAnswer(int size);
  * received if no error happened.
  *    timeInFrame : delay after SOF in UWB ms (1 UWB ms = 1.02 ms) when message
  *      is sent
- *    expectAnswer : 1 if receiver will sent back an answer, 0 otherwise.
+ *    expectAnswer : 1 if receiver will send back an answer, 0 otherwise.
  *    size : size of the message in bytes (message shall be written in
  *      radioBuffer) */
 int messageSend(int timeInFrame, int expectAnswer, int size);

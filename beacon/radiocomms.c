@@ -41,7 +41,7 @@ static THD_FUNCTION(radioThread, th_data) {
 	decaInit();
 
 	while(1) {
-		synchronizeOnSOF(deviceUID == BEACON1_ID);
+		synchronizeOnSOF(1);
 		for(int i=1; i<FRAME_LENGTH; i++) {
 			// skip useless data messages for the beacon
 			if(RXtimeTable[i] != deviceUID && TXtimeTable[i] != dataID)
@@ -63,7 +63,7 @@ static THD_FUNCTION(radioThread, th_data) {
 		}
 
 		// for BEACON 1, update SYNC LED status
-		if(deviceUID == BEACON1_ID)
+		if(1)
 			palWriteLine(LINE_LED_SYNC, connectedDevices != 0);
 	}
 }

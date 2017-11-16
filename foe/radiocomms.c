@@ -54,7 +54,6 @@ static THD_FUNCTION(radioThread, th_data) {
 	dwt_setrxtimeout(RX_TIMEOUT);
 
 	while(1) {
-		printf("Waiting for SOF\r\n");
 		synchronizeOnSOF(deviceUID == BEACON1_ID);
 
 		for(int i=1; i<FRAME_LENGTH; i++) {
@@ -72,11 +71,11 @@ static THD_FUNCTION(radioThread, th_data) {
 					radioBuffer[5] = 0;
 
 					// send data message
-					ret = messageSend(i, 0, 6); // TODO: add payload
+					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6); // TODO: add payload
 					if(ret == -4)
-						printf("Transmission error\r\n");
+						printf("Transmission error, frame = %u\r\n", i);
 					else if (ret == -1)
-						printf("Reception error\r\n");
+						printf("Reception error, frame = %u\r\n", i);
 				}
 
 				else {
@@ -84,11 +83,11 @@ static THD_FUNCTION(radioThread, th_data) {
 					// something else to put in radioBuffer here?
 
 					// send ranging message
-					ret = messageSend(i, 1, 1);
+					ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
 					if(ret == -4)
-						printf("Transmission error\r\n");
+						printf("Transmission error, frame = %u\r\n", i);
 					else if (ret == -1)
-						printf("Reception error\r\n");
+						printf("Reception error, frame = %u\r\n", i);
 					// check frame is actually our response
 					else if (radioBuffer[0] == RANGE_MSG) {
 						int distanceInMm;
