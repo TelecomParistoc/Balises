@@ -12,6 +12,7 @@
 #include "nonvolatile.h"
 #include "remoteserial.h"
 #include "radiocomms.h"
+#include <math.h>
 
 // register the device sending messages when they are supposed to
 static uint8_t connectedDevices = 0;
@@ -23,6 +24,24 @@ uint8_t dataID = 0;
 int distances[3];
 // information of the robot
 struct robotData radioData;
+
+void kalman() {
+	double x = (double) radioData.x;
+	double y = (double) radioData.y;
+
+	// Compute H
+	double denominator = pow(pow(x, 2) + pow(y, 2), 0.5);
+	double h11 = x/denominator;
+	double h12 = y/denominator;
+	denominator = pow(pow(x - X2, 2) + pow(y, 2), 0.5);
+	double h21 = (x - X2)/denominator;
+	double h22 = y/denominator;
+	denominator = pow(pow(x - X3, 2) + pow(y - Y3, 2), 0.5);
+	double h31 = (x - X3)/denominator;
+	double h32 = (y - Y3)/denominator;
+
+	// TODO
+}
 
 void computeCoordinates() {
 	double x, y;
@@ -104,7 +123,7 @@ static THD_FUNCTION(radioThread, th_data) {
 
 						// compute distance
 						distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
-						printf("Distance = %u\r\n", distanceInMm);
+						printf("Distance: %u, frame = %u\r\n", distanceInMm, i);
 					}
 				}
 			}

@@ -28,6 +28,9 @@ void startRadio(void);
 /* compute the absolute coordinates of the robot from its measured distances to the beacons */
 void computeCoordinates(void);
 
+/* update the filtered data with the currently stored distances to the beacons */
+void kalman(void);
+
 /* ###################### shell callbacks ###################### */
 
 /* show connected devices, USAGE : list */
