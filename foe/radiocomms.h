@@ -31,6 +31,18 @@ void computeCoordinates(void);
 /* update the filtered data with the currently stored distances to the beacons */
 void kalman(void);
 
+/* put the result of a + b in c */
+void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns]);
+
+/* put the result of a^(T) in b */
+void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows]);
+
+/* put the result of a * b in c */
+void multiplyMatrices(int aRows, int innerDim, int bColumns, double a[][innerDim], double b[][bColumns], double c[][bColumns]);
+
+/* put the result of a^(-1) in b */
+void invert33Matrix(double a[][3], double b[][3]);
+
 /* ###################### shell callbacks ###################### */
 
 /* show connected devices, USAGE : list */

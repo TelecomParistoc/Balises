@@ -30,17 +30,101 @@ void kalman() {
 	double y = (double) radioData.y;
 
 	// Compute H
-	double denominator = pow(pow(x, 2) + pow(y, 2), 0.5);
-	double h11 = x/denominator;
-	double h12 = y/denominator;
-	denominator = pow(pow(x - X2, 2) + pow(y, 2), 0.5);
-	double h21 = (x - X2)/denominator;
-	double h22 = y/denominator;
-	denominator = pow(pow(x - X3, 2) + pow(y - Y3, 2), 0.5);
-	double h31 = (x - X3)/denominator;
-	double h32 = (y - Y3)/denominator;
+	double H[3][2];
+	double dist[3][1];
+	dist[0][0] = -pow(pow(x, 2) + pow(y, 2), 0.5);
+	H[0][0] = -x/dist[0][0];
+	H[0][1] = -y/dist[0][0];
+	dist[1][0] = -pow(pow(x - X2, 2) + pow(y, 2), 0.5);
+	H[1][0] = (X2 - x)/dist[1][0];
+	H[1][1] = -y/dist[1][0];
+	dist[2][0] = -pow(pow(x - X3, 2) + pow(y - Y3, 2), 0.5);
+	H[2][0] = (X3 - x)/dist[2][0];
+	H[2][1] = (Y3 - y)/dist[2][0];
 
-	// TODO
+	// Compute S
+	double Hprime[2][3];
+	transposeMatrix(3, 2, H, Hprime);
+	double QH[2][3];
+	multiplyMatrices(2, 2, 3, Q, Hprime, QH);
+	double tmp[3][3];
+	multiplyMatrices(3, 2, 3, H, QH, tmp);
+	double S[3][3];
+	addMatrices(3, 3, tmp, R, S);
+
+	// Compute K
+	invert33Matrix(S, tmp);
+	double K[2][3];
+	multiplyMatrices(2, 3, 3, QH, tmp, K);
+
+	// Compute X
+	double Y[3][1];
+	addMatrices(3, 1, D, dist, Y);
+	double tmp2[2][1];
+	multiplyMatrices(2, 3, 1, K, Y, tmp2);
+	double X[2][1];
+	addMatrices(2, 1, Q, tmp2, X);
+
+	// TODO: compute P?
+
+	// TODO: define R, D and Q
+
+}
+
+void invert33Matrix(double a[][3], double b[][3]) {
+	double det = a[0][0] * (a[1][1] * a[2][2] - a[2][1] * a[1][2]) -
+							 a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) +
+							 a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+
+	b[0][0] = (a[1][1] * a[2][2] - a[2][1] * a[1][2]) / det;
+	b[0][1] = (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det;
+	b[0][2] = (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det;
+	b[1][0] = (a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det;
+	b[1][1] = (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det;
+	b[1][2] = (a[1][0] * a[0][2] - a[0][0] * a[1][2]) / det;
+	b[2][0] = (a[1][0] * a[2][1] - a[2][0] * a[1][1]) / det;
+	b[2][1] = (a[2][0] * a[0][1] - a[0][0] * a[2][1]) / det;
+	b[2][2] = (a[0][0] * a[1][1] - a[1][0] * a[0][1]) / det;
+}
+
+void multiplyMatrices(int aRows, int innerDim, int bColumns, double a[][innerDim], double b[][bColumns], double c[][bColumns]) {
+	int i, j, k;
+
+	//initialize c to 0
+	for (i=0;i<aRows;i++) {
+		for (j=0;j<bColumns;j++) {
+			c[i][j] = 0;
+		}
+	}
+
+	//compute c
+	for (i=0;i<aRows;i++) {
+		for (j=0;j<bColumns;j++) {
+			for (k=0;k<innerDim;k++) {
+				c[i][j] += a[i][k] * b[k][j];
+			}
+		}
+	}
+}
+
+void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows]) {
+	int i, j;
+
+	for (i=0;i<rows;i++) {
+		for (j=0;j<columns;j++) {
+			b[i][j] = a[j][i];
+		}
+	}
+}
+
+void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns]) {
+	int i, j;
+
+	for (i=0;i<rows;i++) {
+		for (j=0;j<columns;j++) {
+			c[i][j] = a[i][j] + b[i][j];
+		}
+	}
 }
 
 void computeCoordinates() {
