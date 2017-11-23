@@ -8,6 +8,8 @@ struct robotData {
 	// sent to the robot
 	int16_t x;
 	int16_t y;
+	double xVect[2][1];
+	double P[2][2];
 	uint8_t flags;
 	// sent to master beacon
 	uint8_t status;
@@ -15,6 +17,10 @@ struct robotData {
 
 /* distances to the beacons */
 extern int distances[];
+
+extern double Q[2][2];
+extern double R[3][3];
+extern double D[3][1];
 
 /* last data received/to send */
 extern struct robotData radioData;
@@ -32,7 +38,7 @@ void computeCoordinates(void);
 void kalman(void);
 
 /* put the result of a + b in c */
-void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns]);
+void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns], int subtract);
 
 /* put the result of a^(T) in b */
 void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows]);
