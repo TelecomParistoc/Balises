@@ -8,22 +8,16 @@ struct robotData {
 	// sent to the robot
 	int16_t x;
 	int16_t y;
-	double xVect[2][1];
-	double P[2][2];
 	uint8_t flags;
 	// sent to master beacon
 	uint8_t status;
 };
 
-/* distances to the beacons */
-extern int distances[];
-
-extern double Q[2][2];
-extern double R[3][3];
-extern double D[3][1];
-
 /* last data received/to send */
 extern struct robotData radioData;
+
+/* distances to the anchors */
+extern int distances[3];
 
 /* ID of the device we read data from (for serial or position) */
 extern uint8_t dataID;
@@ -33,21 +27,6 @@ void startRadio(void);
 
 /* compute the absolute coordinates of the robot from its measured distances to the beacons */
 void computeCoordinates(void);
-
-/* update the filtered data with the currently stored distances to the beacons */
-void kalman(void);
-
-/* put the result of a + b in c */
-void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns], int subtract);
-
-/* put the result of a^(T) in b */
-void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows]);
-
-/* put the result of a * b in c */
-void multiplyMatrices(int aRows, int innerDim, int bColumns, double a[][innerDim], double b[][bColumns], double c[][bColumns]);
-
-/* put the result of a^(-1) in b */
-void invert33Matrix(double a[][3], double b[][3]);
 
 /* ###################### shell callbacks ###################### */
 
