@@ -8,7 +8,7 @@
 #define POLL_TO_RESP_RX 600
 
 /* RX timeout in us */
-#define RX_TIMEOUT 1000
+#define RX_TIMEOUT 600
 
 /* time waiting for start-of-frame in us */
 #define SYNC_RX_TIMEOUT 50000

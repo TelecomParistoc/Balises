@@ -25,11 +25,11 @@ int distances[3] = {0, 0, 0};
 struct robotData radioData;
 
 void computeCoordinates() {
-	radioData.x = (distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2);
-	radioData.y = (distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*radioData.x)/(2*Y3);
+	radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
+	radioData.y = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*radioData.x)/(2*Y3));
 
 	if(showPosActive)
-		printf("x: %hi, y: %hi\r", radioData.x, radioData.y);
+		printf("x: %u, y: %u\r\n", radioData.x, radioData.y);
 }
 
 static THD_WORKING_AREA(waRadio, 512);
@@ -68,9 +68,9 @@ static THD_FUNCTION(radioThread, th_data) {
 					// send data message
 					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6); // TODO: add payload
 					if(ret == -4)
-						printf("Transmission error, frame = %u\r\n", i);
-					else if (ret == -1)
-						printf("Reception error, frame = %u\r\n", i);
+						printf("TXerr, f= %u\r\n", i);
+					else if (ret < 0)
+						printf("RXerr, f= %u\r\n", i);
 				}
 
 				else {
@@ -80,10 +80,10 @@ static THD_FUNCTION(radioThread, th_data) {
 					// send ranging message
 					ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
 					if(ret == -4)
-						printf("Transmission error, frame = %u\r\n", i);
-					else if (ret == -1)
-						printf("Reception error, frame = %u\r\n", i);
-					// check frame is actually our response
+						printf("TXerr, f= %u\r\n", i);
+					else if (ret <= 0)
+						printf("RXerr, f= %u\r\n", i);
+					check frame is actually our response
 					else if (radioBuffer[0] == RANGE_MSG) {
 						int distanceInMm;
 						int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
@@ -99,11 +99,11 @@ static THD_FUNCTION(radioThread, th_data) {
 
 						// compute distance
 						distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
-						printf("Distance: %i, frame = %u\r\n", distanceInMm, i);
+						printf("distance=%i, f=%u\r\n", distanceInMm, i);
 						if (deviceUID == BIGFOE_ID)
-							distances[i%3-1] = distanceInMm;
+							distances[3-i] = distanceInMm;
 						else if (deviceUID == SMALLFOE_ID)
-							distances[i%3-2] = distanceInMm;
+							distances[7-i] = distanceInMm;
 					}
 				}
 			}
