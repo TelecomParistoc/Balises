@@ -62,7 +62,7 @@ static THD_FUNCTION(radioThread, th_data) {
 					radioBuffer[5] = 0;
 
 					// send data message
-					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6); // TODO: add payload
+					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
 					if(ret == -4)
 						printf("TXerr, f= %u\r\n", i);
 					else if (ret < 0)
