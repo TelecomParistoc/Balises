@@ -123,7 +123,7 @@ CSRC = $(STARTUPSRC) \
        $(CHIBIOS)/os/various/shell.c \
        $(DRIVERSRC) \
        $(RADIOSRC) \
-       main.c remoteserial.c
+       main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
