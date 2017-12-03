@@ -101,7 +101,7 @@ include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 
 # Define linker script file here
-LDSCRIPT= ../shared/STM32F302C6.ld
+LDSCRIPT= ./STM32F302C8.ld
 
 vpath %.c ../shared/decadriver/
 vpath %.c ../shared/
