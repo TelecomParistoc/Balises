@@ -20,13 +20,13 @@ struct robotData radioData;
 void computeCoordinates() {
 	radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
 	radioData.y = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*radioData.x)/(2*Y3));
-	int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
+	// int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
 
 	// TODO: compare z2 to the real height of the beacon to exclude incoherent input
 
 	if(1)
-		// printf("x: %u, y: %u\r\n", radioData.x, radioData.y);
-		printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
+		printf("%u,%u\r\n", radioData.x, radioData.y);
+		// printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
 }
 
 static THD_WORKING_AREA(waRadio, 512);
