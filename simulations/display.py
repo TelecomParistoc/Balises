@@ -14,22 +14,39 @@ win.setWindowTitle('pyqtgraph example: Plotting')
 
 pg.setConfigOptions(antialias=False)
 
-p = win.addPlot(title="Updating plot")
-curve = p.plot(pen='y')
-data = np.zeros(1000)
+p1 = win.addPlot(title="Updating plot")
+p2 = win.addPlot(title="Updating plot")
+p3 = win.addPlot(title="Updating plot")
+
+curve1 = p1.plot(pen='y')
+curve2 = p2.plot(pen='y')
+curve3 = p3.plot(pen='y')
+data1 = np.zeros(1000)
+data2 = np.zeros(1000)
+data3 = np.zeros(1000)
 
 ser = serial.Serial('/dev/ttyACM0', timeout=1)
 ser.close()
 ser = serial.Serial('/dev/ttyACM0', timeout=1)
 
-p.setYRange(0, 5000)
+p1.setYRange(0, 5000)
+p2.setYRange(0, 5000)
+p3.setYRange(0, 5000)
 
 def update():
-    global curve, data, p
-    for i in range(data.size - 1):
-        data[i] = data[i+1]
-    data[data.size - 1] = ser.readline()
-    curve.setData(data)
+    global curve1, curve2, curve3, data1, data2, data3
+    for i in range(data1.size - 1):
+        data1[i] = data1[i+1]
+        data2[i] = data2[i+1]
+        data3[i] = data3[i+1]
+    lines = ser.readline().split(",")
+
+    data1[data1.size - 1] = lines[0]
+    curve1.setData(data1)
+    data2[data2.size - 1] = lines[1]
+    curve2.setData(data2)
+    data3[data3.size - 1] = lines[2]
+    curve3.setData(data3)
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)

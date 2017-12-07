@@ -25,7 +25,8 @@ void computeCoordinates() {
 	// TODO: compare z2 to the real height of the beacon to exclude incoherent input
 
 	if(1)
-		printf("x: %u, y: %u\r\n", radioData.x, radioData.y);
+		// printf("x: %u, y: %u\r\n", radioData.x, radioData.y);
+		printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
 }
 
 static THD_WORKING_AREA(waRadio, 512);
@@ -63,10 +64,10 @@ static THD_FUNCTION(radioThread, th_data) {
 
 					// send data message
 					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
-					if(ret == -4)
-						printf("TXerr, f= %u\r\n", i);
-					else if (ret < 0)
-						printf("RXerr, f= %u\r\n", i);
+					// if(ret == -4)
+					// 	printf("TXerr, f= %u\r\n", i);
+					// else if (ret < 0)
+					// 	printf("RXerr, f= %u\r\n", i);
 				}
 
 				else {
@@ -75,12 +76,12 @@ static THD_FUNCTION(radioThread, th_data) {
 
 					// send ranging message
 					ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
-					if(ret == -4)
-						printf("TXerr, f= %u\r\n", i);
-					else if (ret <= 0)
-						printf("RXerr, f= %u\r\n", i);
+					// if(ret == -4)
+					// 	printf("TXerr, f= %u\r\n", i);
+					// else if (ret <= 0)
+					// 	printf("RXerr, f= %u\r\n", i);
 					// check frame is actually our response
-					else if (radioBuffer[0] == RANGE_MSG) {
+					if (radioBuffer[0] == RANGE_MSG) {
 						int distanceInMm;
 						int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
 
@@ -95,7 +96,7 @@ static THD_FUNCTION(radioThread, th_data) {
 
 						// compute distance
 						distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
-						printf("distance=%i, f=%u\r\n", distanceInMm, i);
+						// printf("distance=%i, f=%u\r\n", distanceInMm, i);
 						if (deviceUID == BIGFOE_ID)
 							distances[3-i] = distanceInMm;
 						else if (deviceUID == SMALLFOE_ID)

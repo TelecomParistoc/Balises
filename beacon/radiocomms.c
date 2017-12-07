@@ -41,16 +41,16 @@ static THD_FUNCTION(radioThread, th_data) {
 	decaInit();
 
 	while(1) {
-		synchronizeOnSOF(BEACON1_ID == BEACON1_ID);
+		synchronizeOnSOF(deviceUID == BEACON1_ID);
 		for(int i=1; i<FRAME_LENGTH; i++) {
 			// skip useless data messages for the beacon
-			if(RXtimeTable[i] != BEACON1_ID && TXtimeTable[i] != dataID)
+			if(RXtimeTable[i] != deviceUID && TXtimeTable[i] != dataID)
 				continue;
 			// if beacon is supposed to receive a message
-			if(BEACON1_ID & RXtimeTable[i]) {
+			if(deviceUID & RXtimeTable[i]) {
 				ret = messageReceive(i*TIMESLOT_LENGTH);
 				// if it's a ranging message
-				if(ret == 1 && radioBuffer[0] == RANGE_MSG && BEACON1_ID == RXtimeTable[i]) {
+				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i]) {
 					messageAnswer(sendSerialData(&radioBuffer[3], TXtimeTable[i])+3);
 					connectedDevices |= TXtimeTable[i];
 				} else if(ret > 1 && radioBuffer[0] == DATA_MSG) { // if it's a robot data message
@@ -63,7 +63,7 @@ static THD_FUNCTION(radioThread, th_data) {
 		}
 
 		// for BEACON 1, update SYNC LED status
-		if(BEACON1_ID == BEACON1_ID)
+		if(deviceUID == BEACON1_ID)
 			palWriteLine(LINE_LED_SYNC, connectedDevices != 0);
 	}
 }
