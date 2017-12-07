@@ -12,21 +12,24 @@ win = pg.GraphicsWindow(title="Plot")
 win.resize(1000,600)
 win.setWindowTitle('pyqtgraph example: Plotting')
 
-# Enable antialiasing for prettier plots
-pg.setConfigOptions(antialias=True)
+pg.setConfigOptions(antialias=False)
 
 p = win.addPlot(title="Updating plot")
 curve = p.plot(pen='y')
-data = np.zeros(100)
+data = np.zeros(1000)
 
 ser = serial.Serial('/dev/ttyACM0', timeout=1)
+ser.close()
+ser = serial.Serial('/dev/ttyACM0', timeout=1)
+
+p.setYRange(0, 5000)
 
 def update():
     global curve, data, p
-    curve.setData(data[ptr%10])
     for i in range(data.size - 1):
         data[i] = data[i+1]
-        data[data.size - 1] = ser.readline()
+    data[data.size - 1] = ser.readline()
+    curve.setData(data)
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
