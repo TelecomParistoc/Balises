@@ -1,11 +1,13 @@
+#include "usbconf.h"
 #include <math.h>
+#include "kalman.h"
+#include "../shared/radioconf.h"
 
 float P[2][2] = {{0, 0}, {0, 0}};
-float Q[2][2] = {{1, 0}, {0, 1}};
+float Q[2][2] = {{1.0404, 0}, {0, 1.0404}};
 float R[3][3] = {{211*pow(10, -9), 0, 0}, {0, 211*pow(10, -9), 0}, {0, 0, 211*pow(10, -9)}};
-float D[3][1] = {{0}, {0}, {0}};
 
-void kalman() {
+void kalmanIteration(float xVect[2][1], float D[3][1]) {
 	float x, y, z;
 
 	x = (D[0][0]*D[0][0]-D[1][0]*D[1][0]+X2*X2)/(2*X2);
@@ -20,15 +22,15 @@ void kalman() {
 	// Compute H
 	float H[3][2];
 	float dist[3][1];
-	dist[0][0] = pow(pow(radioData.xVect[0][0], 2) + pow(radioData.xVect[1][0], 2), 0.5);
-	H[0][0] = radioData.xVect[0][0]/dist[0][0];
-	H[0][1] = radioData.xVect[1][0]/dist[0][0];
-	dist[1][0] = pow(pow(radioData.xVect[0][0] - X2, 2) + pow(radioData.xVect[1][0], 2), 0.5);
-	H[1][0] = (radioData.xVect[0][0] - X2)/dist[1][0];
-	H[1][1] = radioData.xVect[1][0]/dist[1][0];
-	dist[2][0] = pow(pow(radioData.xVect[0][0] - X3, 2) + pow(radioData.xVect[1][0] - Y3, 2), 0.5);
-	H[2][0] = (radioData.xVect[0][0] - X3)/dist[2][0];
-	H[2][1] = (radioData.xVect[1][0] - Y3)/dist[2][0];
+	dist[0][0] = pow(pow(xVect[0][0], 2) + pow(xVect[1][0], 2), 0.5);
+	H[0][0] = xVect[0][0]/dist[0][0];
+	H[0][1] = xVect[1][0]/dist[0][0];
+	dist[1][0] = pow(pow(xVect[0][0] - X2, 2) + pow(xVect[1][0], 2), 0.5);
+	H[1][0] = (xVect[0][0] - X2)/dist[1][0];
+	H[1][1] = xVect[1][0]/dist[1][0];
+	dist[2][0] = pow(pow(xVect[0][0] - X3, 2) + pow(xVect[1][0] - Y3, 2), 0.5);
+	H[2][0] = (xVect[0][0] - X3)/dist[2][0];
+	H[2][1] = (xVect[1][0] - Y3)/dist[2][0];
 
 	// Compute S
 	float Hprime[2][3];
@@ -44,13 +46,15 @@ void kalman() {
 	invert33Matrix(S, tmp);
 	float K[2][3];
 	multiplyMatrices(2, 3, 3, PH, tmp, K);
+	printMatrix(2,3,K);
 
 	// Compute X
 	float Y[3][1];
 	addMatrices(3, 1, D, dist, Y, 1);
 	float tmp2[2][1];
 	multiplyMatrices(2, 3, 1, K, Y, tmp2);
-	addMatrices(2, 1, radioData.xVect, tmp2, radioData.xVect, 0);
+	addMatrices(2, 1, xVect, tmp2, xVect, 0);
+	printMatrix(2,1,xVect);
 
 	// Compute P
 	float tmp3[2][2];
@@ -58,6 +62,18 @@ void kalman() {
 	float id[2][2] = {{1, 0}, {0, 1}};
 	addMatrices(2, 2, id, tmp3, tmp3, 1);
 	multiplyMatrices(2, 2, 2, tmp3, Pproj, P);
+	printMatrix(2,2,P);
+}
+
+void printMatrix(int rows, int columns, float a[][columns]) {
+	int i, j;
+	for (i=0;i<rows;i++) {
+		for (j=0;j<columns;j++) {
+			printf("%f,", a[i][j]);
+		}
+		printf(";");
+	}
+	printf("\r\n");
 }
 
 void invert33Matrix(float a[][3], float b[][3]) {
@@ -101,7 +117,7 @@ void transposeMatrix(int rows, int columns, float a[][columns], float b[][rows])
 
 	for (i=0;i<rows;i++) {
 		for (j=0;j<columns;j++) {
-			b[i][j] = a[j][i];
+			b[j][i] = a[i][j];
 		}
 	}
 }

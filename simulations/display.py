@@ -19,7 +19,7 @@ pg.setConfigOptions(antialias=False)
 # p3 = win.addPlot(title="Updating plot")
 p4 = win.addPlot(title="Table")
 
-n = 4
+n = 5
 s1 = pg.ScatterPlotItem(size=10, pen=pg.mkPen(None), brush=pg.mkBrush(255, 255, 255, 120))
 pos = np.zeros(shape=(2,n))
 pos[0][1] = 3000
@@ -61,6 +61,8 @@ def update():
     # curve3.setData(data3)
     pos[0][3] = lines[0]
     pos[1][3] = lines[1]
+    pos[0][4] = lines[2]
+    pos[1][4] = lines[3]
     spots = [{'pos': pos[:,i], 'data': 1} for i in range(n)] + [{'pos': [0,0], 'data': 1}]
     s1.clear()
     s1.addPoints(spots)

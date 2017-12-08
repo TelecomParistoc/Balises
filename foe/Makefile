@@ -5,8 +5,10 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -O2 -lm -ggdb -fomit-frame-pointer -falign-functions=16
 endif
+
+-DCHPRINTF_USE_FLOAT=1
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
@@ -107,7 +109,7 @@ vpath %.c ../shared/decadriver/
 vpath %.c ../shared/
 
 RADIOSRC = radiocomms.c decaplatform.c decafunctions.c deca_device.c \
-           deca_params_init.c radioconf.c
+           deca_params_init.c radioconf.c kalman.c
 DRIVERSRC = flash.c exticonf.c nonvolatile.c usbconf.c battery.c
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global

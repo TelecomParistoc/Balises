@@ -6,9 +6,10 @@
 extern float P[2][2];
 extern float Q[2][2];
 extern float R[3][3];
-extern float D[3][1];
 
-void kalmanIteration(void);
+void printMatrix(int rows, int columns, float a[][columns]);
+
+void kalmanIteration(float xVect[2][1], float D[3][1]);
 
 void invert33Matrix(float a[][3], float b[][3]);
 

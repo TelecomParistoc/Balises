@@ -2,9 +2,9 @@ X2 = 3000;
 X3 = 1500;
 Y3 = 2000;
 
-r1 = 1800;
-r2 = 2000;
-r3 = 900;
+r1 = 2678;
+r2 = 2424;
+r3 = 1552;
 
 x = (r1^2-r2^2+X2^2)/(2*X2);
 y = (r1^2-r3^2+X3^2+Y3^2-2*X3*x)/(2*Y3);
@@ -24,8 +24,8 @@ rectangle(gca(), "Position", [x-50,y-50,100,100], "Curvature", 1, "FaceColor", "
 axis(gca(), "equal");
 
 #Kalman
-x0 = 1400;
-y0 = 1200;
+x0 = 1658;
+y0 = 1512;
 #standard deviation of the noise of the position
 qx = 30;
 qy = 30;
@@ -36,7 +36,7 @@ e1 = 0.002;
 e2 = 0.002;
 e3 = 0.002;
 R = Treply/2*diag([e1,e2,e3]);
-D = [1800;2000;900];
+D = [r1;r2;r3];
 
 # P model
 X = [x0; y0];
@@ -47,7 +47,8 @@ Q = [qx*dt,0;0,qy*dt];
   Xproj = A*X;
   Pproj = A*P*A'+Q;
   H = [X(1)/sqrt(X(1)^2+X(2)^2),X(2)/sqrt(X(1)^2+X(2)^2);(X(1)-X2)/sqrt((X(1)-X2)^2+X(2)^2),X(2)/sqrt((X(1)-X2)^2+X(2)^2);(X(1)-X3)/sqrt((X(1)-X3)^2+(X(2)-Y3)^2),(X(2)-Y3)/sqrt((X(1)-X3)^2+(X(2)-Y3)^2)];
-  K = Pproj*H'*inv(H*Pproj*H'+R);
+  S = H*Pproj*H'+R
+  K = Pproj*H'*inv(S);
   X = Xproj+K*(D-[sqrt(X(1)^2+X(2)^2);sqrt((X(1)-X2)^2+X(2)^2);sqrt((X(1)-X3)^2+(X(2)-Y3)^2)])
   P = (eye(2)-K*H)*Pproj
   rectangle(gca(), "Position", [X(1)-50,X(2)-50,100,100], "Curvature", 1, "FaceColor", "blue");

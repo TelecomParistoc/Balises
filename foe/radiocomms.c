@@ -11,11 +11,14 @@
 #include "../shared/decadriver/deca_device_api.h"
 #include "nonvolatile.h"
 #include "radiocomms.h"
+#include "kalman.h"
+
 
 // Distances to anchors
 int distances[3] = {0, 0, 0};
 // information of the robot
 struct robotData radioData;
+float xVect[2][1] = {{1658}, {1512}};
 
 void computeCoordinates() {
 	radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
@@ -25,8 +28,8 @@ void computeCoordinates() {
 	// TODO: compare z2 to the real height of the beacon to exclude incoherent input
 
 	if(1)
-		printf("%u,%u\r\n", radioData.x, radioData.y);
-		// printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
+		// printf("%u,%u\r\n", radioData.x, radioData.y);
+		printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
 }
 
 static THD_WORKING_AREA(waRadio, 512);
@@ -55,6 +58,11 @@ static THD_FUNCTION(radioThread, th_data) {
 				// TODO: make it not hardcoded
 				if (i == 4 || i == 8) {
 					computeCoordinates();
+					if (0<radioData.x && 0<radioData.y && 3000>radioData.x && 2000>radioData.y) {
+						float D[3][1] = {{distances[0]}, {distances[1]}, {distances[2]}};
+						kalmanIteration(xVect, D);
+					}
+					// printf("%d,%d,%d,%d\r\n", radioData.x, radioData.y, (int) xVect[0][0], (int) xVect[1][0]);
 					radioBuffer[0] = DATA_MSG;
 					radioBuffer[1] = radioData.x;
 					radioBuffer[2] = radioData.x >> 8;
@@ -81,7 +89,7 @@ static THD_FUNCTION(radioThread, th_data) {
 					// else if (ret <= 0)
 					// 	printf("RXerr, f= %u\r\n", i);
 					// check frame is actually our response
-					if (radioBuffer[0] == RANGE_MSG) {
+					if (ret > 0 && radioBuffer[0] == RANGE_MSG) {
 						int distanceInMm;
 						int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
 
