@@ -17,7 +17,7 @@ struct robotData {
 extern struct robotData radioData;
 
 /* distances to the anchors */
-extern int distances[3];
+extern int16_t distances[3];
 
 extern float xVect[2][1];
 

@@ -15,7 +15,7 @@
 
 
 // Distances to anchors
-int distances[3] = {0, 0, 0};
+int16_t distances[3] = {0, 0, 0};
 // information of the robot
 struct robotData radioData;
 float xVect[2][1] = {{1658}, {1512}};
@@ -57,18 +57,21 @@ static THD_FUNCTION(radioThread, th_data) {
 				// check if we are in a data time slot
 				// TODO: make it not hardcoded
 				if (i == 4 || i == 8) {
-					computeCoordinates();
-					if (0<radioData.x && 0<radioData.y && 3000>radioData.x && 2000>radioData.y) {
-						float D[3][1] = {{distances[0]}, {distances[1]}, {distances[2]}};
-						kalmanIteration(xVect, D);
-					}
+					// computeCoordinates();
+					// if (0<radioData.x && 0<radioData.y && 3000>radioData.x && 2000>radioData.y) {
+					// 	float D[3][1] = {{distances[0]}, {distances[1]}, {distances[2]}};
+					// 	kalmanIteration(xVect, D);
+					// }
 					// printf("%d,%d,%d,%d\r\n", radioData.x, radioData.y, (int) xVect[0][0], (int) xVect[1][0]);
+          printf("%d,%d,%d\r\n", distances[0], distances[1], distances[2]);
 					radioBuffer[0] = DATA_MSG;
-					radioBuffer[1] = radioData.x;
-					radioBuffer[2] = radioData.x >> 8;
-					radioBuffer[3] = radioData.y;
-					radioBuffer[4] = radioData.y >> 8;
-					radioBuffer[5] = 0;
+					radioBuffer[1] = distances[0];
+					radioBuffer[2] = distances[0] >> 8;
+					radioBuffer[3] = distances[1];
+					radioBuffer[4] = distances[1] >> 8;
+					radioBuffer[5] = distances[2];
+					radioBuffer[6] = distances[2] >> 8;
+					radioBuffer[7] = 0;
 
 					// send data message
 					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
@@ -84,12 +87,13 @@ static THD_FUNCTION(radioThread, th_data) {
 
 					// send ranging message
 					ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
-					// if(ret == -4)
-					// 	printf("TXerr, f= %u\r\n", i);
-					// else if (ret <= 0)
-					// 	printf("RXerr, f= %u\r\n", i);
+					if(ret == -4)
+						printf("TXerr, f= %u\r\n", i);
+					else if (ret <= 0)
+						printf("RXerr, f= %u\r\n", i);
 					// check frame is actually our response
-					if (ret > 0 && radioBuffer[0] == RANGE_MSG) {
+					// condition ret>0 useless with previous else if
+					else if (ret > 0 && radioBuffer[0] == RANGE_MSG) {
 						int distanceInMm;
 						int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
 

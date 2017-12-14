@@ -22,10 +22,10 @@ void parseRobotData(int senderID, int size) {
 	(void) size;
 
 	if(showPosActive)
-		printf("x:%d, y: %d\r", *((int16_t*) &radioBuffer[1]), *((int16_t*) &radioBuffer[3]));
+		printf("d1:%d, d2: %d\r", *((int16_t*) &radioBuffer[1]), *((int16_t*) &radioBuffer[3]), *((int16_t*) &radioBuffer[2]));
 	// if there are remote serial data sent
-	if(radioBuffer[5] > 0)
-		receiveSerialData(&radioBuffer[6], radioBuffer[5], senderID);
+	if(radioBuffer[7] > 0)
+		receiveSerialData(&radioBuffer[8], radioBuffer[7], senderID);
 }
 
 static THD_WORKING_AREA(waRadio, 512);
