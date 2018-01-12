@@ -2,9 +2,9 @@ X2 = 3000;
 X3 = 1500;
 Y3 = 2000;
 
-r1 = 863;
-r2 = 1911;
-r3 = 0;
+r1 = 1600;
+r2 = 1600;
+r3 = 1450;
 
 x = (r1^2-r2^2+X2^2)/(2*X2);
 y = (r1^2-r3^2+X3^2+Y3^2-2*X3*x)/(2*Y3);
@@ -24,8 +24,8 @@ rectangle(gca(), "Position", [x-50,y-50,100,100], "Curvature", 1, "FaceColor", "
 axis(gca(), "equal");
 
 #Kalman
-x0 = 1658;
-y0 = 1512;
+x0 = 1500;
+y0 = 1000;
 #standard deviation of the noise of the position
 qx = 30;
 qy = 30;
@@ -44,16 +44,17 @@ A = eye(2);
 P = zeros(2);
 Q = [qx*dt,0;0,qy*dt];
 #update
+for i = 1:10
+  D2 = awgn(D, 20);
   Xproj = A*X;
   Pproj = A*P*A'+Q;
   H = [X(1)/sqrt(X(1)^2+X(2)^2),X(2)/sqrt(X(1)^2+X(2)^2);(X(1)-X2)/sqrt((X(1)-X2)^2+X(2)^2),X(2)/sqrt((X(1)-X2)^2+X(2)^2);(X(1)-X3)/sqrt((X(1)-X3)^2+(X(2)-Y3)^2),(X(2)-Y3)/sqrt((X(1)-X3)^2+(X(2)-Y3)^2)];
   S = H*Pproj*H'+R
-  det = det(S)
   K = Pproj*H'*inv(S);
-  X = Xproj+K*(D-[sqrt(X(1)^2+X(2)^2);sqrt((X(1)-X2)^2+X(2)^2);sqrt((X(1)-X3)^2+(X(2)-Y3)^2)])
+  X = Xproj+K*(D2-[sqrt(X(1)^2+X(2)^2);sqrt((X(1)-X2)^2+X(2)^2);sqrt((X(1)-X3)^2+(X(2)-Y3)^2)])
   P = (eye(2)-K*H)*Pproj
   rectangle(gca(), "Position", [X(1)-50,X(2)-50,100,100], "Curvature", 1, "FaceColor", "blue");
-
+endfor
 
 %# PV model
 %X = [x0; y0; 0; 0];

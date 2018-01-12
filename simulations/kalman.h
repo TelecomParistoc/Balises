@@ -8,25 +8,24 @@
 #define X3 1500
 #define Y3 2000
 
-extern double P[2][2];
-extern double Q[2][2];
-extern double R[3][3];
+float var;
+float dt;
+float q;
+float P[6][6];
+float Q[6][6];
+float R[2][2];
+float A[6][6];
+float At[6][6];
+float H[2][6];
+float Ht[6][2];
+float xVect[6][1];
 
 struct point_t {
-  double a;
-  double b;
+  float a;
+  float b;
 };
 
-void printMatrix(int rows, int columns, double a[][columns]);
-
-struct point_t kalmanIteration(double x, double y, double d1, double d2, double d3);
-
-void invert33Matrix(double a[][3], double b[][3]);
-
-void multiplyMatrices(int aRows, int innerDim, int bColumns, double a[][innerDim], double b[][bColumns], double c[][bColumns]);
-
-void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows]);
-
-void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns], int subtract);
+void initCst(void);
+struct point_t kalmanIteration(float d1, float d2, float d3);
 
 #endif

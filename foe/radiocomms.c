@@ -3,7 +3,6 @@
 #include "chevents.h"
 #include "chprintf.h"
 
-#include "usbconf.h"
 #include "exticonf.h"
 #include "../shared/radioconf.h"
 #include "../shared/decaplatform.h"
@@ -12,13 +11,16 @@
 #include "nonvolatile.h"
 #include "radiocomms.h"
 #include "kalman.h"
+#include "usbconf.h"
 
+#define OFFSET1 1952
+#define OFFSET2 1758
+#define OFFSET3 1456
 
 // Distances to anchors
 int16_t distances[3] = {0, 0, 0};
 // information of the robot
 struct robotData radioData;
-float xVect[2][1] = {{1658}, {1512}};
 
 void computeCoordinates() {
 	radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
@@ -32,94 +34,94 @@ void computeCoordinates() {
 		printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
 }
 
-static THD_WORKING_AREA(waRadio, 512);
+static THD_WORKING_AREA(waRadio, 1024);
 static THD_FUNCTION(radioThread, th_data) {
 	event_listener_t evt_listener;
 	int ret;
 
-	(void) th_data;
-	chRegSetThreadName("Radio");
+  (void) th_data;
+  chRegSetThreadName("Radio");
 
-	// initialize decawave module
-	chEvtRegisterMask(&deca_event, &evt_listener, EVENT_MASK(0));
-	decaInit();
+  // initialize decawave module
+  chEvtRegisterMask(&deca_event, &evt_listener, EVENT_MASK(0));
+  decaInit();
 
-	// Set expected response's delay and timeout
-	dwt_setrxaftertxdelay(POLL_TO_RESP_RX);
-	dwt_setrxtimeout(RX_TIMEOUT);
+  // Set expected response's delay and timeout
+  dwt_setrxaftertxdelay(POLL_TO_RESP_RX);
+  dwt_setrxtimeout(RX_TIMEOUT);
 
-	while(1) {
-		synchronizeOnSOF(0);
+	initKalmanCst();
 
-		for(int i=1; i<FRAME_LENGTH; i++) {
-			// check for time to send message
-			if(TXtimeTable[i] & deviceUID) {
-				// check if we are in a data time slot
-				// TODO: make it not hardcoded
-				if (i == 4 || i == 8) {
-					// computeCoordinates();
-					// if (0<radioData.x && 0<radioData.y && 3000>radioData.x && 2000>radioData.y) {
-					// 	float D[3][1] = {{distances[0]}, {distances[1]}, {distances[2]}};
-					// 	kalmanIteration(xVect, D);
-					// }
-					// printf("%d,%d,%d,%d\r\n", radioData.x, radioData.y, (int) xVect[0][0], (int) xVect[1][0]);
-          printf("%d,%d,%d\r\n", distances[0], distances[1], distances[2]);
-					radioBuffer[0] = DATA_MSG;
-					radioBuffer[1] = distances[0];
-					radioBuffer[2] = distances[0] >> 8;
-					radioBuffer[3] = distances[1];
-					radioBuffer[4] = distances[1] >> 8;
-					radioBuffer[5] = distances[2];
-					radioBuffer[6] = distances[2] >> 8;
-					radioBuffer[7] = 0;
+  while(1) {
+    synchronizeOnSOF(0);
 
-					// send data message
-					ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
-					// if(ret == -4)
-					// 	printf("TXerr, f= %u\r\n", i);
-					// else if (ret < 0)
-					// 	printf("RXerr, f= %u\r\n", i);
-				}
+    for(int i=1; i<FRAME_LENGTH; i++) {
+      // check for time to send message
+      if(TXtimeTable[i] & deviceUID) {
+        // check if we are in a data time slot
+        // TODO: make it not hardcoded
+        if (i == 4 || i == 8) {
+          // computeCoordinates();
+          // if (0<radioData.x && 0<radioData.y && 3000>radioData.x && 2000>radioData.y) {
+          //   float D[3][1] = {{distances[0]}, {distances[1]}, {distances[2]}};
+          //   kalmanIteration(xVect, D);
+          // }
+          // printf("%d,%d,%d,%d\r\n", radioData.x, radioData.y, (int) xVect[0][0], (int) xVect[1][0]);
+          printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
+          kalmanIteration(distances[0] - OFFSET1, distances[1] - OFFSET2, distances[2] - OFFSET3);
+          radioBuffer[0] = DATA_MSG;
+          radioBuffer[1] = (uint16_t) xVect[0][0];
+          radioBuffer[2] = ((uint16_t) xVect[0][0]) >> 8;
+          radioBuffer[3] = (uint16_t) xVect[1][0];
+          radioBuffer[4] = ((uint16_t) xVect[1][0]) >> 8;
+          radioBuffer[5] = 0;
 
-				else {
-					radioBuffer[0] = RANGE_MSG;
-					// something else to put in radioBuffer here?
+          // send data message
+          ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
+          if(ret == -4)
+            printf("TXerr, f= %u\r\n", i);
+          else if (ret < 0)
+            printf("RXerr, f= %u\r\n", i);
+        }
 
-					// send ranging message
-					ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
-					if(ret == -4)
-						printf("TXerr, f= %u\r\n", i);
-					else if (ret <= 0)
-						printf("RXerr, f= %u\r\n", i);
-					// check frame is actually our response
-					// condition ret>0 useless with previous else if
-					else if (ret > 0 && radioBuffer[0] == RANGE_MSG) {
-						int distanceInMm;
-						int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
+        else {
+          radioBuffer[0] = RANGE_MSG;
+          // something else to put in radioBuffer here?
 
-						// Retrieve poll transmission and response reception timestamps
-						tx_ts = dwt_readtxtimestamplo32();
-						rx_ts = dwt_readrxtimestamplo32();
+          // send ranging message
+          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
+          if(ret == -4)
+            printf("TXerr, f= %u\r\n", i);
+          else if (ret <= 0)
+            printf("RXerr, f= %u\r\n", i);
+          // check frame is actually our response
+          // condition ret>0 useless with previous else if
+          else if (ret > 0 && radioBuffer[0] == RANGE_MSG) {
+            int distanceInMm;
+            int32_t tx_ts, rx_ts, beacon_rx_ts, beacon_hold_time;
 
-						// retrieve beacon RX timestamp
-						beacon_rx_ts = (int) radioBuffer[1] + ((int) radioBuffer[2] << 8);
-						// compute precise time between beacon poll RX and response TX
-						beacon_hold_time = POLL_TO_RESP_DLY + TX_ANT_DLY - (beacon_rx_ts & 0x1FF);
+            // Retrieve poll transmission and response reception timestamps
+            tx_ts = dwt_readtxtimestamplo32();
+            rx_ts = dwt_readrxtimestamplo32();
 
-						// compute distance
-						distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
-						// printf("distance=%i, f=%u\r\n", distanceInMm, i);
-						if (deviceUID == BIGFOE_ID)
-							distances[3-i] = distanceInMm;
-						else if (deviceUID == SMALLFOE_ID)
-							distances[7-i] = distanceInMm;
-					}
-				}
-			}
-		}
-	}
+            // retrieve beacon RX timestamp
+            beacon_rx_ts = (int) radioBuffer[1] + ((int) radioBuffer[2] << 8);
+            // compute precise time between beacon poll RX and response TX
+            beacon_hold_time = POLL_TO_RESP_DLY + TX_ANT_DLY - (beacon_rx_ts & 0x1FF);
+
+            // compute distance
+            distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
+            if (deviceUID == BIGFOE_ID)
+              distances[3-i] = distanceInMm;
+            else if (deviceUID == SMALLFOE_ID)
+              distances[7-i] = distanceInMm;
+          }
+        }
+      }
+    }
+  }
 }
 
 void startRadio(void) {
-	chThdCreateStatic(waRadio, sizeof(waRadio), NORMALPRIO+1, radioThread, NULL);
+  chThdCreateStatic(waRadio, sizeof(waRadio), NORMALPRIO+1, radioThread, NULL);
 }

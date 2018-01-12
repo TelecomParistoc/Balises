@@ -6,10 +6,10 @@
 #include "chprintf.h"
 
 #define printf(...) \
-	do { \
-		if(SDU1.config->usbp->state == USB_ACTIVE) \
-			chprintf(USBserial, __VA_ARGS__); \
-	} while(0)
+  do { \
+    if(SDU1.config->usbp->state == USB_ACTIVE) \
+      chprintf(USBserial, __VA_ARGS__); \
+  } while(0)
 
 extern const USBConfig usbcfg;
 extern SerialUSBConfig serusbcfg;

@@ -1,22 +1,26 @@
 #ifndef KALMAN_H
 #define KALMAN_H
 
-#include "ch.h"
+#include <stdint.h>
+#include <stdio.h>
 
-extern float P[2][2];
-extern float Q[2][2];
-extern float R[3][3];
+#define X2 3000
+#define X3 1500
+#define Y3 2000
 
-void printMatrix(int rows, int columns, float a[][columns]);
+extern float var;
+extern float dt;
+extern float q;
+extern float P[6][6];
+extern float Q[6][6];
+extern float R[2][2];
+extern float A[6][6];
+extern float At[6][6];
+extern float H[2][6];
+extern float Ht[6][2];
+extern float xVect[6][1];
 
-void kalmanIteration(float xVect[2][1], float D[3][1]);
-
-void invert33Matrix(float a[][3], float b[][3]);
-
-void multiplyMatrices(int aRows, int innerDim, int bColumns, float a[][innerDim], float b[][bColumns], float c[][bColumns]);
-
-void transposeMatrix(int rows, int columns, float a[][columns], float b[][rows]);
-
-void addMatrices(int rows, int columns, float a[][columns], float b[][columns], float c[][columns], int subtract);
+void initKalmanCst(void);
+void kalmanIteration(float d1, float d2, float d3);
 
 #endif

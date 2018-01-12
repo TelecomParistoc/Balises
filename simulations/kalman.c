@@ -1,67 +1,231 @@
 #include <math.h>
+#include <stdlib.h>
 #include "kalman.h"
 
-double P[2][2] = {{0, 0}, {0, 0}};
-double Q[2][2] = {{22, 0}, {0, 22}};
-double R[3][3] = {{211*pow(10, -3), 0, 0}, {0, 211*pow(10, -3), 0}, {0, 0, 211*pow(10, -3)}};
+#define  PI 3.1415926
 
-struct point_t kalmanIteration(double a, double b, double d1, double d2, double d3) {
-  double xVect[2][1] = {{a}, {b}};
-  double D[3][1] = {{d1}, {d2}, {d3}};
-	double x, y, z;
+void awgn (int n, float mean, float variance, const float arrayIn[3], float arrayOut[3]) {
+  int    i, j;
+  float   **img;
+  float x1, x2, tmp, x, xn, y, yn;
 
-	x = (D[0][0]*D[0][0]-D[1][0]*D[1][0]+X2*X2)/(2*X2);
-	y = (D[0][0]*D[0][0]-D[2][0]*D[2][0]+X3*X3+Y3*Y3-2*X3*x)/(2*Y3);
-	z =	pow(fabs(pow(D[0][0], 2) - pow(x, 2) - pow(y, 2)), 0.5);
-	// TODO: check z against its real value to determine incoherent measures
+  for (i=0; i<n; i++) {
+    arrayOut[i] = arrayIn[i];
+  }
 
-	// Compute Pproj
-	double Pproj[2][2];
-	addMatrices(2, 2, P, Q, Pproj, 0);
+  for (i=0; i<n; i++) {
+    // x1, x2: uniform random variables in the range [0, 1]
+    do
+    x1 = (float)rand()/RAND_MAX;
+    while (x1 == 0);    // x1 can't be zero
+    x2 = (float)rand()/RAND_MAX;
 
-	// Compute H
-	double H[3][2];
-	double dist[3][1];
-	dist[0][0] = pow(pow(xVect[0][0], 2) + pow(xVect[1][0], 2), 0.5);
-	H[0][0] = xVect[0][0]/dist[0][0];
-	H[0][1] = xVect[1][0]/dist[0][0];
-	dist[1][0] = pow(pow(xVect[0][0] - X2, 2) + pow(xVect[1][0], 2), 0.5);
-	H[1][0] = (xVect[0][0] - X2)/dist[1][0];
-	H[1][1] = xVect[1][0]/dist[1][0];
-	dist[2][0] = pow(pow(xVect[0][0] - X3, 2) + pow(xVect[1][0] - Y3, 2), 0.5);
-	H[2][0] = (xVect[0][0] - X3)/dist[2][0];
-	H[2][1] = (xVect[1][0] - Y3)/dist[2][0];
+    // x, y: unit normal random variables, ~N(0, 1)
+    // xn, yn: normal random variables, ~N(mean, variance)
+    x = sqrt(-2*log(x1)) * cos(2*PI*x2);
+    xn = mean + sqrt(variance) * x;
+    // y = sqrt(-2*log(x1)) * sin(2*PI*x2);
+    // yn = mean + sqrt(variance) * y;
 
-	// Compute S
-	double Hprime[2][3];
-	transposeMatrix(3, 2, H, Hprime);
-	double PH[2][3];
-	multiplyMatrices(2, 2, 3, Pproj, Hprime, PH);
-	double tmp[3][3];
-	multiplyMatrices(3, 2, 3, H, PH, tmp);
-	double S[3][3];
-	addMatrices(3, 3, tmp, R, S, 0);
+    tmp = arrayIn[i] + xn;   // Add noise to pixel
+    if (tmp < 0)
+      arrayOut[i] = 0;
+    else
+      arrayOut[i] = tmp;
+  }
+}
 
-	// Compute K
-	invert33Matrix(S, tmp);
-	double K[2][3];
-	multiplyMatrices(2, 3, 3, PH, tmp, K);
-	// printMatrix(2,3,K);
+void initCst() {
+  var = 1e010;
+  dt = 0.03468;
+  q = 1000;
+
+  int i, j;
+  for (i=0;i<6;i++) {
+    P[i][i] = 1;
+    A[i][i] = 1;
+    xVect[i][0] = 0;
+  }
+
+  for (i=0;i<6;i++) {
+    for (j=i;j<6;j++) {
+      if (i == j && i < 2)
+        Q[i][i] = q*pow(dt,5)/20;
+      else if (i == j && i < 4)
+        Q[i][i] = q*pow(dt,3)/3;
+      else if (i == j)
+        Q[i][i] = q*dt;
+      else if (j == i + 4) {
+        Q[i][j] = q*pow(dt,3)/3;
+        Q[j][i] = q*pow(dt,3)/3;
+      }
+      else if (j == i + 2 && i <  2) {
+        Q[i][j] = q*pow(dt,4)/8;
+        Q[j][i] = q*pow(dt,4)/8;
+      }
+      else if (j == i + 2) {
+        Q[i][j] = q*pow(dt,2)/2;
+        Q[j][i] = q*pow(dt,2)/2;
+      }
+    }
+  }
+
+  // float R[2][2] = {{var/(2*X2*X2),var*(X2-2*X3)/(4*X2*X2*Y3)},{var*(X2-2*X3)/(4*X2*X2*Y3),var*(1+(X3/X2)*(X3/X2-1))/(2*Y3*Y3)}};
+  R[0][0] = 747;
+  R[1][1] = 1261;
+
+  A[0][2] = dt;
+  A[0][4] = pow(dt,2)/2;
+  A[1][3] = dt;
+  A[1][5] = pow(dt,2)/2;
+  A[2][4] = dt;
+  A[3][5] = dt;
+  transposeMatrix(6, 6, A, At);
+
+  H[0][0] = 1;
+  H[1][1] = 1;
+  transposeMatrix(2, 6, H, Ht);
+}
+
+void test() {
+  printf("%f\n", q);
+}
+
+/* Cholesky-decomposition matrix-inversion code, adapated from
+http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
+
+static int choldc1(float * a, float * p, int n) {
+  int i,j,k;
+  float sum;
+
+  for (i = 0; i < n; i++) {
+    for (j = i; j < n; j++) {
+      sum = a[i*n+j];
+      for (k = i - 1; k >= 0; k--) {
+        sum -= a[i*n+k] * a[j*n+k];
+      }
+      if (i == j) {
+        if (sum <= 0) {
+          return 1; /* error */
+        }
+        p[i] = sqrt(sum);
+      }
+      else {
+        a[j*n+i] = sum / p[i];
+      }
+    }
+  }
+
+  return 0; /* success */
+}
+
+static int choldcsl(float * A, float * a, float * p, int n)
+{
+  int i,j,k; float sum;
+  for (i = 0; i < n; i++)
+  for (j = 0; j < n; j++)
+  a[i*n+j] = A[i*n+j];
+  if (choldc1(a, p, n)) return 1;
+  for (i = 0; i < n; i++) {
+    a[i*n+i] = 1 / p[i];
+    for (j = i + 1; j < n; j++) {
+      sum = 0;
+      for (k = i; k < j; k++) {
+        sum -= a[j*n+k] * a[k*n+i];
+      }
+      a[j*n+i] = sum / p[j];
+    }
+  }
+
+  return 0; /* success */
+}
+
+
+static int cholsl(float * A, float * a, float * p, int n)
+{
+  int i,j,k;
+  if (choldcsl(A,a,p,n)) return 1;
+  for (i = 0; i < n; i++) {
+    for (j = i + 1; j < n; j++) {
+      a[i*n+j] = 0.0;
+    }
+  }
+  for (i = 0; i < n; i++) {
+    a[i*n+i] *= a[i*n+i];
+    for (k = i + 1; k < n; k++) {
+      a[i*n+i] += a[k*n+i] * a[k*n+i];
+    }
+    for (j = i + 1; j < n; j++) {
+      for (k = j; k < n; k++) {
+        a[i*n+j] += a[k*n+i] * a[k*n+j];
+      }
+    }
+  }
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < i; j++) {
+      a[i*n+j] = a[j*n+i];
+    }
+  }
+
+  return 0; /* success */
+}
+
+struct point_t kalmanIteration(float d1, float d2, float d3) {
+  float x, y, z;
+  float distances[3] = {d1, d2, d3};
+  float distancesWGN[3] = {0, 0, 0};
+  awgn(3, 0, 729, distances, distancesWGN);
+  x = (pow(distancesWGN[0], 2)-pow(distancesWGN[1], 2)+X2*X2)/(2*X2);
+  y = (pow(distancesWGN[0], 2)-pow(distancesWGN[2], 2)+X3*X3+Y3*Y3-2*X3*x)/(2*Y3);
+  z = pow(fabs(pow(distancesWGN[0], 2) - pow(x, 2) - pow(y, 2)), 0.5);
+  // TODO: check z against its real value to determine incoherent measures
+
+  float input[2][1] = {{x},{y}};
+
+  // Compute current state estimate
+  float Xproj[6][1];
+  multiplyMatrices(6, 6, 1, A, xVect, Xproj);
+
+  // Compute Pproj
+  float Pproj[6][6];
+  multiplyMatrices(6, 6, 6, A, P, Pproj);
+  float tmp2[6][6];
+  multiplyMatrices(6, 6, 6, Pproj, At, tmp2);
+  addMatrices(6, 6, tmp2, Q, Pproj, 0);
+
+  // Compute innovation
+  float Hx[2][1];
+  multiplyMatrices(2, 6, 1, H, Xproj, Hx);
+  float yTilde[2][1];
+  addMatrices(2, 1, input, Hx, yTilde, 1);
+
+  // Compute S2
+  float PH[6][2];
+  multiplyMatrices(6, 6, 2, Pproj, Ht, PH);
+  float tmp[2][2];
+  multiplyMatrices(2, 6, 2, H, PH, tmp);
+  float S[2][2];
+  addMatrices(2, 2, tmp, R, S, 0);
+
+  // Compute K
+  float array[2];
+  cholsl(S, tmp, array, 2);
+
+  float K[6][2];
+  multiplyMatrices(6, 2, 2, PH, tmp, K);
+  // printMatrix(2,3,K);
 
 	// Compute X
-	double Y[3][1];
-	addMatrices(3, 1, D, dist, Y, 1);
-	double tmp2[2][1];
-	multiplyMatrices(2, 3, 1, K, Y, tmp2);
-	addMatrices(2, 1, xVect, tmp2, xVect, 0);
+	float tmp3[6][1];
+	multiplyMatrices(6, 2, 1, K, yTilde, tmp3);
+	addMatrices(6, 1, Xproj, tmp3, xVect, 0);
 	// printMatrix(2,1,xVect);
 
 	// Compute P
-	double tmp3[2][2];
-	multiplyMatrices(2, 3, 2, K, H, tmp3);
-	double id[2][2] = {{1, 0}, {0, 1}};
-	addMatrices(2, 2, id, tmp3, tmp3, 1);
-	multiplyMatrices(2, 2, 2, tmp3, Pproj, P);
+	multiplyMatrices(6, 2, 6, K, H, tmp2);
+	float id[6][6] = {{1,0,0,0,0,0},{0,1,0,0,0,0},{0,0,1,0,0,0},{0,0,0,1,0,0},{0,0,0,0,1,0},{0,0,0,0,0,1}};
+	addMatrices(6, 6, id, tmp2, tmp2, 1);
+	multiplyMatrices(6, 6, 6, tmp2, Pproj, P);
 	// printMatrix(2,2,P);
 
   struct point_t ret;
@@ -70,7 +234,7 @@ struct point_t kalmanIteration(double a, double b, double d1, double d2, double 
   return ret;
 }
 
-void printMatrix(int rows, int columns, double a[][columns]) {
+void printMatrix(int rows, int columns, float a[][columns]) {
 	int i, j;
 	for (i=0;i<rows;i++) {
 		for (j=0;j<columns;j++) {
@@ -81,23 +245,7 @@ void printMatrix(int rows, int columns, double a[][columns]) {
 	printf("\r\n");
 }
 
-void invert33Matrix(double a[][3], double b[][3]) {
-	double det = a[0][0] * (a[1][1] * a[2][2] - a[2][1] * a[1][2]) -
-							 a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) +
-							 a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
-
-	b[0][0] = (a[1][1] * a[2][2] - a[2][1] * a[1][2]) / det;
-	b[0][1] = (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det;
-	b[0][2] = (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det;
-	b[1][0] = (a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det;
-	b[1][1] = (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det;
-	b[1][2] = (a[1][0] * a[0][2] - a[0][0] * a[1][2]) / det;
-	b[2][0] = (a[1][0] * a[2][1] - a[2][0] * a[1][1]) / det;
-	b[2][1] = (a[2][0] * a[0][1] - a[0][0] * a[2][1]) / det;
-	b[2][2] = (a[0][0] * a[1][1] - a[1][0] * a[0][1]) / det;
-}
-
-void multiplyMatrices(int aRows, int innerDim, int bColumns, double a[][innerDim], double b[][bColumns], double c[][bColumns]) {
+void multiplyMatrices(int aRows, int innerDim, int bColumns, float a[][innerDim], float b[][bColumns], float c[][bColumns]) {
 	int i, j, k;
 
 	//initialize c to 0
@@ -117,7 +265,7 @@ void multiplyMatrices(int aRows, int innerDim, int bColumns, double a[][innerDim
 	}
 }
 
-void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows]) {
+void transposeMatrix(int rows, int columns, float a[][columns], float b[][rows]) {
 	int i, j;
 
 	for (i=0;i<rows;i++) {
@@ -127,7 +275,7 @@ void transposeMatrix(int rows, int columns, double a[][columns], double b[][rows
 	}
 }
 
-void addMatrices(int rows, int columns, double a[][columns], double b[][columns], double c[][columns], int subtract) {
+void addMatrices(int rows, int columns, float a[][columns], float b[][columns], float c[][columns], int subtract) {
 	int i, j;
 
 	for (i=0;i<rows;i++) {
