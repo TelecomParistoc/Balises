@@ -20,6 +20,7 @@
 #define SOF_MSG 0x50
 #define RANGE_MSG 0x23
 #define DATA_MSG 0x32
+#define CAL_MSG 0x36
 
 /* system IDs : */
 #define BEACON1_ID  0x01

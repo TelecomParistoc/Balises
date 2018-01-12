@@ -132,6 +132,17 @@ static THD_FUNCTION(radioThread, th_data) {
           }
         }
       }
+
+      // if beacon is supposed to receive a message
+      else if(deviceUID & RXtimeTable[i]) {
+        ret = messageReceive(i*TIMESLOT_LENGTH);
+        // if it's a robot data message
+        if(ret > 1 && radioBuffer[0] == DATA_MSG) {
+          // if BigBot sends a calibration order
+          if (radioBuffer[57] == CAL_MSG)
+            calibration = 1;
+        }
+      }
     }
 
     if (calibration > 0 && calibration < CALIBRATION_STEPS)
