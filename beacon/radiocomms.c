@@ -117,22 +117,23 @@ static THD_FUNCTION(radioThread, th_data) {
             // compute distance
             distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
 
-            if (deviceUID == BIGFOE_ID) {
-              distances[3-i] = distanceInMm;
+            if (deviceUID == BIGBOT_ID) {
+              distances[11-i] = distanceInMm;
               if (calibration > 0) {
-                averageCalibration[3-i] = (averageCalibration[3-i]*calibration + distanceInMm)/(calibration+1);
+                averageCalibration[11-i] = (averageCalibration[11-i]*calibration + distanceInMm)/(calibration+1);
               }
             }
-            else if (deviceUID == SMALLFOE_ID) {
-              distances[7-i] = distanceInMm;
+            else if (deviceUID == SMALLBOT_ID) {
+              distances[15-i] = distanceInMm;
               if (calibration > 0) {
-                averageCalibration[7-i] = (averageCalibration[7-i]*calibration + distanceInMm)/(calibration+1);
+                averageCalibration[15-i] = (averageCalibration[15-i]*calibration + distanceInMm)/(calibration+1);
               }
             }
           }
         }
       }
     }
+
     if (calibration > 0 && calibration < CALIBRATION_STEPS)
       calibration++;
     else if (calibration > 0) {
@@ -142,7 +143,7 @@ static THD_FUNCTION(radioThread, th_data) {
         offset2 = averageCalibration[1] - pow((X2-BBX)*(X2-BBX) + BBY*BBY, 0.5);
         offset3 = averageCalibration[2] - pow((X3-BBX)*((X3-BBX)) + (Y3-BBY)*(Y3-BBY), 0.5);
       }
-      else {
+      else if (deviceUID == SMALLBOT_ID) {
         offset1 = averageCalibration[0] - pow(SBX*SBX + SBY*SBY, 0.5);
         offset2 = averageCalibration[1] - pow((X2-SBX)*(X2-SBX) + SBY*SBY, 0.5);
         offset3 = averageCalibration[2] - pow((X3-SBX)*((X3-SBX)) + (Y3-SBY)*(Y3-SBY), 0.5);
