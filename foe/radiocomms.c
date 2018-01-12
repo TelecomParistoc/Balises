@@ -13,9 +13,7 @@
 #include "kalman.h"
 #include "usbconf.h"
 
-#define OFFSET1 1952
-#define OFFSET2 1758
-#define OFFSET3 1456
+#define CALIBRATION_STEPS = 100;
 
 // Distances to anchors
 int16_t distances[3] = {0, 0, 0};
@@ -23,21 +21,21 @@ int16_t distances[3] = {0, 0, 0};
 struct robotData radioData;
 
 void computeCoordinates() {
-	radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
-	radioData.y = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*radioData.x)/(2*Y3));
-	// int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
+  radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
+  radioData.y = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*radioData.x)/(2*Y3));
+  // int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
 
-	// TODO: compare z2 to the real height of the beacon to exclude incoherent input
+  // TODO: compare z2 to the real height of the beacon to exclude incoherent input
 
-	if(1)
-		// printf("%u,%u\r\n", radioData.x, radioData.y);
-		printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
+  if(1)
+    // printf("%u,%u\r\n", radioData.x, radioData.y);
+    printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
 }
 
 static THD_WORKING_AREA(waRadio, 1024);
 static THD_FUNCTION(radioThread, th_data) {
-	event_listener_t evt_listener;
-	int ret;
+  event_listener_t evt_listener;
+  int ret;
 
   (void) th_data;
   chRegSetThreadName("Radio");
@@ -50,7 +48,14 @@ static THD_FUNCTION(radioThread, th_data) {
   dwt_setrxaftertxdelay(POLL_TO_RESP_RX);
   dwt_setrxtimeout(RX_TIMEOUT);
 
-	initKalmanCst();
+  initKalmanCst();
+
+  int calibration = 0;
+  float averageCalibration[3] = {0, 0, 0};
+
+  int offset1 = 952;
+  int offset2 = 758;
+  int offset3 = 456;
 
   while(1) {
     synchronizeOnSOF(0);
@@ -61,14 +66,9 @@ static THD_FUNCTION(radioThread, th_data) {
         // check if we are in a data time slot
         // TODO: make it not hardcoded
         if (i == 4 || i == 8) {
-          // computeCoordinates();
-          // if (0<radioData.x && 0<radioData.y && 3000>radioData.x && 2000>radioData.y) {
-          //   float D[3][1] = {{distances[0]}, {distances[1]}, {distances[2]}};
-          //   kalmanIteration(xVect, D);
-          // }
-          // printf("%d,%d,%d,%d\r\n", radioData.x, radioData.y, (int) xVect[0][0], (int) xVect[1][0]);
-          printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
           kalmanIteration(distances[0] - OFFSET1, distances[1] - OFFSET2, distances[2] - OFFSET3);
+          printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
+
           radioBuffer[0] = DATA_MSG;
           radioBuffer[1] = (uint16_t) xVect[0][0];
           radioBuffer[2] = ((uint16_t) xVect[0][0]) >> 8;
@@ -111,13 +111,30 @@ static THD_FUNCTION(radioThread, th_data) {
 
             // compute distance
             distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
-            if (deviceUID == BIGFOE_ID)
+
+            if (deviceUID == BIGFOE_ID) {
               distances[3-i] = distanceInMm;
-            else if (deviceUID == SMALLFOE_ID)
+              if (calibration > 0) {
+                averageCalibration[3-i] = (averageCalibration[3-i]*calibration + distanceInMm)/(calibration+1)
+              }
+            }
+            else if (deviceUID == SMALLFOE_ID) {
               distances[7-i] = distanceInMm;
+              if (calibration > 0) {
+                averageCalibration[7-i] = (averageCalibration[7-i]*calibration + distanceInMm)/(calibration+1)
+              }
+            }
           }
         }
       }
+    }
+    if (calibration > 0 && calibration < CALIBRATION_STEPS)
+      calibration++;
+    else if (calibration > 0) {
+      calibration = 0;
+      offset1 = averageCalibration[0];
+      offset2 = averageCalibration[1];
+      offset3 = averageCalibration[2];
     }
   }
 }

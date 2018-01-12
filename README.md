@@ -17,3 +17,6 @@ Documentation about the board can be found at
 
 ## Radio Protocol
 The protocol used in communications between modules is specified in [protocol.md](https://github.com/TelecomParistoc/Beacons/blob/master/protocol.md).
+
+## Calibration
+Measured distances seem to be linearly dependent on the real distance between two beacons. However, the associated coefficients vary depending on the surroundings and may need to be calibrated at the beggining of each match.
