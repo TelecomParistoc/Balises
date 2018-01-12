@@ -4,6 +4,60 @@
 
 #define  PI 3.1415926
 
+void printMatrix(int rows, int columns, float a[][columns]) {
+	int i, j;
+	for (i=0;i<rows;i++) {
+		for (j=0;j<columns;j++) {
+			printf("%f,", a[i][j]);
+		}
+		printf(";");
+	}
+	printf("\r\n");
+}
+
+void multiplyMatrices(int aRows, int innerDim, int bColumns, float a[][innerDim], float b[][bColumns], float c[][bColumns]) {
+	int i, j, k;
+
+	//initialize c to 0
+	for (i=0;i<aRows;i++) {
+		for (j=0;j<bColumns;j++) {
+			c[i][j] = 0;
+		}
+	}
+
+	//compute c
+	for (i=0;i<aRows;i++) {
+		for (j=0;j<bColumns;j++) {
+			for (k=0;k<innerDim;k++) {
+				c[i][j] += a[i][k] * b[k][j];
+			}
+		}
+	}
+}
+
+void transposeMatrix(int rows, int columns, float a[][columns], float b[][rows]) {
+	int i, j;
+
+	for (i=0;i<rows;i++) {
+		for (j=0;j<columns;j++) {
+			b[j][i] = a[i][j];
+		}
+	}
+}
+
+void addMatrices(int rows, int columns, float a[][columns], float b[][columns], float c[][columns], int subtract) {
+	int i, j;
+
+	for (i=0;i<rows;i++) {
+		for (j=0;j<columns;j++) {
+			if (subtract)
+				c[i][j] = a[i][j] - b[i][j];
+			else
+				c[i][j] = a[i][j] + b[i][j];
+		}
+	}
+}
+
 void awgn (int n, float mean, float variance, const float arrayIn[3], float arrayOut[3]) {
   int    i, j;
   float   **img;
@@ -232,58 +286,4 @@ struct point_t kalmanIteration(float d1, float d2, float d3) {
   ret.a = xVect[0][0];
   ret.b = xVect[1][0];
   return ret;
-}
-
-void printMatrix(int rows, int columns, float a[][columns]) {
-	int i, j;
-	for (i=0;i<rows;i++) {
-		for (j=0;j<columns;j++) {
-			printf("%f,", a[i][j]);
-		}
-		printf(";");
-	}
-	printf("\r\n");
-}
-
-void multiplyMatrices(int aRows, int innerDim, int bColumns, float a[][innerDim], float b[][bColumns], float c[][bColumns]) {
-	int i, j, k;
-
-	//initialize c to 0
-	for (i=0;i<aRows;i++) {
-		for (j=0;j<bColumns;j++) {
-			c[i][j] = 0;
-		}
-	}
-
-	//compute c
-	for (i=0;i<aRows;i++) {
-		for (j=0;j<bColumns;j++) {
-			for (k=0;k<innerDim;k++) {
-				c[i][j] += a[i][k] * b[k][j];
-			}
-		}
-	}
-}
-
-void transposeMatrix(int rows, int columns, float a[][columns], float b[][rows]) {
-	int i, j;
-
-	for (i=0;i<rows;i++) {
-		for (j=0;j<columns;j++) {
-			b[j][i] = a[i][j];
-		}
-	}
-}
-
-void addMatrices(int rows, int columns, float a[][columns], float b[][columns], float c[][columns], int subtract) {
-	int i, j;
-
-	for (i=0;i<rows;i++) {
-		for (j=0;j<columns;j++) {
-			if (subtract)
-				c[i][j] = a[i][j] - b[i][j];
-			else
-				c[i][j] = a[i][j] + b[i][j];
-		}
-	}
 }
