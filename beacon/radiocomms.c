@@ -12,8 +12,14 @@
 #include "radiocomms.h"
 #include "kalman.h"
 #include "usbconf.h"
+#include <math.h>
 
 #define CALIBRATION_STEPS 100
+
+#define BBX 200
+#define BBY 1800
+#define SBX 200
+#define SBY 1600
 
 // Distances to anchors
 int16_t distances[3] = {0, 0, 0};
@@ -49,6 +55,9 @@ static THD_FUNCTION(radioThread, th_data) {
   dwt_setrxtimeout(RX_TIMEOUT);
 
   initKalmanCst();
+
+  int calibration = 0;
+  float averageCalibration[3] = {0, 0, 0};
 
   int offset1 = 952;
   int offset2 = 758;
@@ -110,12 +119,33 @@ static THD_FUNCTION(radioThread, th_data) {
 
             if (deviceUID == BIGFOE_ID) {
               distances[3-i] = distanceInMm;
+              if (calibration > 0) {
+                averageCalibration[3-i] = (averageCalibration[3-i]*calibration + distanceInMm)/(calibration+1);
+              }
             }
             else if (deviceUID == SMALLFOE_ID) {
               distances[7-i] = distanceInMm;
+              if (calibration > 0) {
+                averageCalibration[7-i] = (averageCalibration[7-i]*calibration + distanceInMm)/(calibration+1);
+              }
             }
           }
         }
+      }
+    }
+    if (calibration > 0 && calibration < CALIBRATION_STEPS)
+      calibration++;
+    else if (calibration > 0) {
+      calibration = 0;
+      if (deviceUID == BIGBOT_ID) {
+        offset1 = averageCalibration[0] - pow(BBX*BBX + BBY*BBY, 0.5);
+        offset2 = averageCalibration[1] - pow((X2-BBX)*(X2-BBX) + BBY*BBY, 0.5);
+        offset3 = averageCalibration[2] - pow((X3-BBX)*((X3-BBX)) + (Y3-BBY)*(Y3-BBY), 0.5);
+      }
+      else {
+        offset1 = averageCalibration[0] - pow(SBX*SBX + SBY*SBY, 0.5);
+        offset2 = averageCalibration[1] - pow((X2-SBX)*(X2-SBX) + SBY*SBY, 0.5);
+        offset3 = averageCalibration[2] - pow((X3-SBX)*((X3-SBX)) + (Y3-SBY)*(Y3-SBY), 0.5);
       }
     }
   }
