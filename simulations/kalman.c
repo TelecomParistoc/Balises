@@ -92,48 +92,32 @@ void awgn (int n, float mean, float variance, const float arrayIn[3], float arra
 void initCst() {
   var = 1e010;
   dt = 0.03468;
-  q = 1000;
+  q = 100000;
 
   int i, j;
   for (i=0;i<6;i++) {
     P[i][i] = 1;
-    A[i][i] = 1;
     xVect[i][0] = 0;
   }
 
-  for (i=0;i<6;i++) {
-    for (j=i;j<6;j++) {
-      if (i == j && i < 2)
-        Q[i][i] = q*pow(dt,5)/20;
-      else if (i == j && i < 4)
-        Q[i][i] = q*pow(dt,3)/3;
-      else if (i == j)
-        Q[i][i] = q*dt;
-      else if (j == i + 4) {
-        Q[i][j] = q*pow(dt,3)/3;
-        Q[j][i] = q*pow(dt,3)/3;
-      }
-      else if (j == i + 2 && i <  2) {
-        Q[i][j] = q*pow(dt,4)/8;
-        Q[j][i] = q*pow(dt,4)/8;
-      }
-      else if (j == i + 2) {
-        Q[i][j] = q*pow(dt,2)/2;
-        Q[j][i] = q*pow(dt,2)/2;
-      }
-    }
-  }
+  Q[0][0] = q*pow(dt,3)/3;
+  Q[1][1] = q*pow(dt,3)/3;
+  Q[2][2] = q*dt;
+  Q[3][3] = q*dt;
+  Q[0][2] = Q[2][0] = q*pow(dt,2)/2;
+  Q[1][3] = Q[3][1] = q*pow(dt,2)/2;
 
   // float R[2][2] = {{var/(2*X2*X2),var*(X2-2*X3)/(4*X2*X2*Y3)},{var*(X2-2*X3)/(4*X2*X2*Y3),var*(1+(X3/X2)*(X3/X2-1))/(2*Y3*Y3)}};
   R[0][0] = 747;
   R[1][1] = 1261;
 
+  A[0][0] = 1;
+  A[1][1] = 1;
+  A[2][2] = 1;
+  A[3][3] = 1;
   A[0][2] = dt;
-  A[0][4] = pow(dt,2)/2;
   A[1][3] = dt;
-  A[1][5] = pow(dt,2)/2;
-  A[2][4] = dt;
-  A[3][5] = dt;
+
   transposeMatrix(6, 6, A, At);
 
   H[0][0] = 1;
