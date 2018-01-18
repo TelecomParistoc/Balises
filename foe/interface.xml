@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<interface device_addr="0x12">
+    <registers location="ram">
+        <register>
+            <name>current x absolute position</name>
+            <c_name>x</c_name>
+            <type>uint16</type>
+            <address>0x00</address>
+            <read>true</read>
+            <write>false</write>
+            <category>cur_pos</category>
+            <gen_code>true</gen_code>
+        </register>
+        <register>
+            <name>current y absolute position</name>
+            <c_name>y</c_name>
+            <type>uint16</type>
+            <address>0x04</address>
+            <read>true</read>
+            <write>false</write>
+            <category>cur_pos</category>
+            <gen_code>true</gen_code>
+        </register>
+    </registers>
+</interface>
