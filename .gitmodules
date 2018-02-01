@@ -1,4 +1,6 @@
-[submodule "ChibiOS"]
-	path = ChibiOS
-	url = git@github.com:ChibiOS/ChibiOS.git
-	branch = stable_16.1.x
+[submodule "foe/STMdrivers"]
+	path = foe/STMdrivers
+	url = git@github.com:TelecomParistoc/STMdrivers.git
+[submodule "foe/i2cInterfaceGenerator"]
+	path = foe/i2cInterfaceGenerator
+	url = git@github.com:TelecomParistoc/i2cInterfaceGenerator.git
