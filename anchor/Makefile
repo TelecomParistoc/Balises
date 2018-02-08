@@ -88,6 +88,7 @@ PROJECT = beacons
 # Imported source files and paths
 CHIBIOS = ../ChibiOS
 BOARD = ../board
+I2C_ITF_DIR = ../i2cInterfaceGenerator
 
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f3xx.mk
@@ -105,6 +106,8 @@ LDSCRIPT= ./STM32F302C6.ld
 
 vpath %.c ../shared/decadriver/
 vpath %.c ../shared/
+vpath %.c src
+vpath %.h src
 
 RADIOSRC = radiocomms.c decaplatform.c decafunctions.c deca_device.c \
            deca_params_init.c radioconf.c
@@ -154,7 +157,8 @@ ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 
 INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) \
-         $(CHIBIOS)/os/hal/lib/streams $(CHIBIOS)/os/various .
+         $(CHIBIOS)/os/hal/lib/streams $(CHIBIOS)/os/various \
+         inc src
 
 
 #
@@ -233,5 +237,23 @@ debug: all
 	-killall JLinkGDBServer
 	JLinkGDBServer -if swd -device "STM32F302C6" -LocalhostOnly&
 	$(GDB) build/$(PROJECT).elf
+
+interface:
+	export CC=gcc-6
+	make -C $(I2C_ITF_DIR)/
+	$(I2C_ITF_DIR)/xml i2c_config.txt
+	mv i2c_interface_gen.c src/i2c_interface_gen.c
+	mv i2c_interface_addr.h inc/i2c_interface_addr.h
+	cat .interface.md >> specs.md
+
+interface_clean:
+	make -C $(I2C_ITF_DIR)/ clean
+
+distclean:
+	make clean
+	make interface_clean
+	rm -f src/i2c_interface_gen.c
+	rm -f inc/i2c_interface_addr.h
+
 
 .PHONY: debug debugserver

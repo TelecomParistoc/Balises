@@ -102,7 +102,6 @@ include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
-# drivers
 
 # Define linker script file here
 LDSCRIPT= ./STM32F302C8.ld
@@ -132,7 +131,6 @@ CSRC = $(STARTUPSRC) \
        $(DRIVERSRC) \
        $(RADIOSRC) \
        $(RTTSRC) \
-       $(DRVSRC) \
        main.c i2c_interface.c beacon.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -165,7 +163,6 @@ ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) \
          $(CHIBIOS)/os/hal/lib/streams $(CHIBIOS)/os/various \
-         $(DRVINC) \
 				 inc src
 
 
