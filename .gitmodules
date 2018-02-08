@@ -1,6 +1,6 @@
 [submodule "foe/STMdrivers"]
-	path = foe/STMdrivers
+	path = STMdrivers
 	url = git@github.com:TelecomParistoc/STMdrivers.git
 [submodule "foe/i2cInterfaceGenerator"]
-	path = foe/i2cInterfaceGenerator
+	path = i2cInterfaceGenerator
 	url = git@github.com:TelecomParistoc/i2cInterfaceGenerator.git
