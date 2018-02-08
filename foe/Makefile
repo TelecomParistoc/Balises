@@ -90,7 +90,7 @@ PROJECT = beacons
 # Imported source files and paths
 CHIBIOS = ../ChibiOS
 BOARD = ../board
-I2C_ITF_DIR = ./i2cInterfaceGenerator
+I2C_ITF_DIR = ../i2cInterfaceGenerator
 
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f3xx.mk
