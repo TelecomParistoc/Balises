@@ -1,7 +1,7 @@
 #include "i2c_interface.h"
 #include "i2c_lld.h"
 #include "i2cslave.h"
-#include "objects.h"
+#include "beacon.h"
 
 #include <string.h>   //for memcpy
 
