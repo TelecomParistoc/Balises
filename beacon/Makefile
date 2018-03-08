@@ -131,7 +131,7 @@ CSRC = $(STARTUPSRC) \
        $(DRIVERSRC) \
        $(RADIOSRC) \
        $(RTTSRC) \
-       main.c i2c_interface.c beacon.c
+       main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

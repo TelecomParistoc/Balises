@@ -22,7 +22,7 @@ void parseRobotData(int senderID, int size) {
 	(void) size;
 
 	if(showPosActive)
-		printf("x: %i, y: %i\r\n", *((int16_t*) &radioBuffer[1]), *((int16_t*) &radioBuffer[3]));
+		printf("%i,%i\r\n", *((int16_t*) &radioBuffer[1]), *((int16_t*) &radioBuffer[3]));
 	// if there are remote serial data sent
 	if(radioBuffer[5] > 0)
 		receiveSerialData(&radioBuffer[6], radioBuffer[5], senderID);

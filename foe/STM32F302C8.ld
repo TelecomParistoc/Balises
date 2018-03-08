@@ -114,6 +114,7 @@ SECTIONS {
 
 	.flashdata (NOLOAD) : {
 		*(.flashdata)
+    __flashdata = .;
 	} > flashdata
 
 	/* Legacy symbol, not used anywhere.*/

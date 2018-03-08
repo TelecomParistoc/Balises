@@ -7,10 +7,12 @@
 
 typedef uint16_t flashdata_t;
 
+extern char __flashdata;
+
 // 2K pages
 #define FLASH_PAGE_SIZE 2*1024
 // returns the first address of a page
-#define flashPageBegin(page) (FLASH_BASE + page*FLASH_PAGE_SIZE)
+#define flashPageBegin(page) ((int) &__flashdata + page*FLASH_PAGE_SIZE)
 // Wait for the flash operation to finish
 #define flashWaitWhileBusy() { while (FLASH->SR & FLASH_SR_BSY) {} }
 // Lock the flash memory for write access.

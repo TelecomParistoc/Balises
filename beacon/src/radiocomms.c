@@ -72,7 +72,7 @@ static THD_FUNCTION(radioThread, th_data) {
         // check if we are in a data time slot
         if (i % 4 == 0) {
           kalmanIteration(distances[0] - offset1, distances[1] - offset2, distances[2] - offset3);
-          printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
+          // printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
 
           radioBuffer[0] = DATA_MSG;
           radioBuffer[1] = (uint16_t) xVect[0][0];
