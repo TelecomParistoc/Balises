@@ -10,7 +10,7 @@
 #include "../shared/decadriver/deca_device_api.h"
 #include "nonvolatile.h"
 #include "radiocomms.h"
-#include "kalman.h"
+#include "../shared/kalman.h"
 #include "usbconf.h"
 #include <math.h>
 
@@ -23,19 +23,59 @@
 
 // Distances to anchors
 int16_t distances[3] = {0, 0, 0};
+int16_t unfiltered[9];
 // information of the robot
 struct robotData radioData;
 
 void computeCoordinates() {
-  radioData.x = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
-  radioData.y = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*radioData.x)/(2*Y3));
+  // Wikipedia formula:
+  xVect[0][0] = unfiltered[0] = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
+  xVect[1][0] = unfiltered[1] = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*xVect[0][0])/(2*Y3));
+  unfiltered[2] = pow(distances[0], 2)-pow(unfiltered[0], 2)-pow(unfiltered[1], 2);
+
+  // LSQ x,y:
+  float A[2][2] = {{2*(X1-X3), 2*(Y1-Y3)}, {2*(X2-X3), 2*(Y2-Y3)}};
+  float b[2][1] = {{pow(X1,2)-pow(X3,2)+pow(Y1,2)-pow(Y3,2)+pow(distances[2],2)-pow(distances[0],2)}, {pow(X2,2)-pow(X3,2)+pow(Y2,2)-pow(Y3,2)+pow(distances[1],2)-pow(distances[0],2)}};
+
+  float At[2][2];
+  transposeMatrix(2, 2, A, At);
+  float AtA[2][2];
+  multiplyMatrices(2, 2, 2, At, A, AtA);
+  float Atb[2][1];
+  multiplyMatrices(2, 2, 1, At, b, Atb);
+  float array[2];
+  float inv[2][2];
+  cholsl(&AtA[0][0], &inv[0][0], &array[0], 2);
+  float x[2][1];
+  multiplyMatrices(2, 2, 1, inv, Atb, x);
+
+  xVect[0][0] = unfiltered[3] = (int16_t) x[0][0];
+  xVect[1][0] = unfiltered[4] = (int16_t) x[1][0];
+  unfiltered[5] = pow(distances[0], 2)-pow(unfiltered[3], 2)-pow(unfiltered[4], 2);
+
+  // LSQ x,y,z:
+  float Az[2][3] = {{2*(X1-X3), 2*(Y1-Y3), 0}, {2*(X2-X3), 2*(Y2-Y3), 0}};
+  float bz[2][1] = {{pow(X1,2)-pow(X3,2)+pow(Y1,2)-pow(Y3,2)+pow(Z1,2)-pow(Z3,2)+pow(distances[2],2)-pow(distances[0],2)}, {pow(X2,2)-pow(X3,2)+pow(Y2,2)-pow(Y3,2)+pow(Z2,2)-pow(Z3,2)+pow(distances[1],2)-pow(distances[0],2)}};
+
+  float Atz[3][2];
+  transposeMatrix(2, 3, Az, Atz);
+  float AtAz[3][3];
+  multiplyMatrices(3, 2, 3, Atz, Az, AtAz);
+  float Atbz[3][1];
+  multiplyMatrices(3, 2, 1, Atz, bz, Atbz);
+  float arrayz[3];
+  float invz[3][3];
+  cholsl(&AtAz[0][0], &invz[0][0], &arrayz[0], 3);
+  float xz[3][1];
+  multiplyMatrices(3, 3, 1, invz, Atbz, xz);
+
+  unfiltered[6] = (int16_t) xz[0][0];
+  unfiltered[7] = (int16_t) xz[1][0];
+  unfiltered[8] = (int16_t) xz[2][0];
+
   // int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
 
   // TODO: compare z2 to the real height of the beacon to exclude incoherent input
-
-  if(1)
-    // printf("%u,%u\r\n", radioData.x, radioData.y);
-    printf("%i,%i,%i\r\n", distances[0], distances[1], distances[2]);
 }
 
 static THD_WORKING_AREA(waRadio, 1024);
@@ -71,18 +111,23 @@ static THD_FUNCTION(radioThread, th_data) {
       if(TXtimeTable[i] & deviceUID) {
         // check if we are in a data time slot
         if (i % 4 == 0) {
-          kalmanIteration(distances[0] - offset1, distances[1] - offset2, distances[2] - offset3);
+          // kalmanIteration(distances[0] - offset1, distances[1] - offset2, distances[2] - offset3);
+          computeCoordinates();
           // printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
 
           radioBuffer[0] = DATA_MSG;
-          radioBuffer[1] = (uint16_t) xVect[0][0];
-          radioBuffer[2] = ((uint16_t) xVect[0][0]) >> 8;
-          radioBuffer[3] = (uint16_t) xVect[1][0];
-          radioBuffer[4] = ((uint16_t) xVect[1][0]) >> 8;
-          radioBuffer[5] = 0;
+          for (int j = 0; j < 3; j++) {
+            radioBuffer[2*j+1] = (uint16_t) distances[j];
+            radioBuffer[2*j+2] = ((uint16_t) distances[j]) >> 8;
+          }
+          for (int j = 0; j < 9; j++) {
+            radioBuffer[2*j+7] = (uint16_t) unfiltered[j];
+            radioBuffer[2*j+8] = ((uint16_t) unfiltered[j]) >> 8;
+          }
+          radioBuffer[25] = 0;
 
           // send data message
-          ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
+          ret = messageSend(i*TIMESLOT_LENGTH, 0, 26);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret < 0)

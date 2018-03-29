@@ -10,7 +10,7 @@
 #include "../shared/decadriver/deca_device_api.h"
 #include "nonvolatile.h"
 #include "radiocomms.h"
-#include "kalman.h"
+#include "../shared/kalman.h"
 #include "usbconf.h"
 
 #define CALIBRATION_STEPS 100

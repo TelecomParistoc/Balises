@@ -67,7 +67,7 @@ static int choldcsl(float * A, float * a, float * p, int n)
 }
 
 
-static int cholsl(float * A, float * a, float * p, int n)
+int cholsl(float * A, float * a, float * p, int n)
 {
   int i,j,k;
   if (choldcsl(A,a,p,n)) return 1;
@@ -239,7 +239,7 @@ void kalmanIteration(float d1, float d2, float d3) {
 
   // Compute K
   float array[2];
-  cholsl(S, tmp, array, 2);
+  cholsl(&S[0][0], &tmp[0][0], &array[0], 2);
 
   float K[6][2];
   multiplyMatrices(6, 2, 2, PH, tmp, K);
