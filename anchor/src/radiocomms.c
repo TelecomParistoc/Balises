@@ -21,11 +21,12 @@ uint8_t dataID = 0;
 void parseRobotData(int senderID, int size) {
 	(void) size;
 
-	if(showPosActive)
+	if(showPosActive) {
     for (int i = 0; i < 11; i++) {
       printf("%i,", *((int16_t*) &radioBuffer[2*i+1]));
     }
     printf("%i\r\n", *((int16_t*) &radioBuffer[23]));
+  }
 
 	// if there are remote serial data sent
 	if(radioBuffer[25] > 0)

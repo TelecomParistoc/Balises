@@ -38,9 +38,9 @@ def update():
         data2[i] = data2[i+1]
     lines = ser.readline().split(",")
 
-    data1[data1.size - 1] = lines[0]
+    data1[data1.size - 1] = lines[5]
     curve1.setData(data1)
-    data2[data2.size - 1] = lines[1]
+    data2[data2.size - 1] = lines[8]
     curve2.setData(data2)
 
 timer = QtCore.QTimer()

@@ -67,7 +67,7 @@ static int choldcsl(float * A, float * a, float * p, int n)
 }
 
 
-int cholsl(float * A, float * a, float * p, int n)
+static int cholsl(float * A, float * a, float * p, int n)
 {
   int i,j,k;
   if (choldcsl(A,a,p,n)) return 1;

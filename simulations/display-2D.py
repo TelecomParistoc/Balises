@@ -40,10 +40,10 @@ ser.readline()
 def update():
     global curve1, curve2, data1, data2
     lines = ser.readline().split(",")
-    pos[0][3] = lines[3]
-    pos[1][3] = lines[4]
-    pos[0][4] = lines[6]
-    pos[1][4] = lines[7]
+#    pos[0][3] = lines[3]
+#    pos[1][3] = lines[4]
+#    pos[0][4] = lines[6]
+#    pos[1][4] = lines[7]
     pos[0][5] = lines[9]
     pos[1][5] = lines[10]
 
