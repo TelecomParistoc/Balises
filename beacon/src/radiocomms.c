@@ -26,32 +26,13 @@ int16_t distances[3] = {0, 0, 0};
 int16_t unfiltered[9];
 // information of the robot
 struct robotData radioData;
+int calibration = 0;
 
 void computeCoordinates() {
   // Wikipedia formula:
   unfiltered[0] = (int16_t) ((distances[0]*distances[0]-distances[1]*distances[1]+X2*X2)/(2*X2));
   unfiltered[1] = (int16_t) ((distances[0]*distances[0]-distances[2]*distances[2]+X3*X3+Y3*Y3-2*X3*xVect[0][0])/(2*Y3));
   unfiltered[2] = pow(fabs(pow(distances[0], 2)-pow(unfiltered[0], 2)-pow(unfiltered[1], 2)), 0.5);
-
-  // LSQ x,y:
-  float A[2][2] = {{2*(X1-X3), 2*(Y1-Y3)}, {2*(X2-X3), 2*(Y2-Y3)}};
-  float b[2][1] = {{pow(X1,2)-pow(X3,2)+pow(Y1,2)-pow(Y3,2)+pow(distances[2],2)-pow(distances[0],2)}, {pow(X2,2)-pow(X3,2)+pow(Y2,2)-pow(Y3,2)+pow(distances[1],2)-pow(distances[0],2)}};
-
-  float At[2][2];
-  transposeMatrix(2, 2, A, At);
-  float AtA[2][2];
-  multiplyMatrices(2, 2, 2, At, A, AtA);
-  float Atb[2][1];
-  multiplyMatrices(2, 2, 1, At, b, Atb);
-  float array[2];
-  float inv[2][2];
-  cholsl(&AtA[0][0], &inv[0][0], &array[0], 2);
-  float x[2][1];
-  multiplyMatrices(2, 2, 1, inv, Atb, x);
-
-  unfiltered[3] = (int16_t) x[0][0];
-  unfiltered[4] = (int16_t) x[1][0];
-  unfiltered[5] = pow(fabs(pow(distances[0], 2)-pow(x[0][0], 2)-pow(x[1][0], 2)), 0.5);
 
   // int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
 
@@ -76,7 +57,6 @@ static THD_FUNCTION(radioThread, th_data) {
 
   initKalmanCst();
 
-  int calibration = 1;
   float averageCalibration[3] = {0, 0, 0};
 
   int offset1 = 952;
@@ -179,16 +159,18 @@ static THD_FUNCTION(radioThread, th_data) {
       calibration++;
     else if (calibration > 0) {
       calibration = 0;
+      int x, y;
       if (deviceUID == BIGBOT_ID) {
-        offset1 = averageCalibration[0] - pow(BBX*BBX + BBY*BBY, 0.5);
-        offset2 = averageCalibration[1] - pow((X2-BBX)*(X2-BBX) + BBY*BBY, 0.5);
-        offset3 = averageCalibration[2] - pow((X3-BBX)*((X3-BBX)) + (Y3-BBY)*(Y3-BBY), 0.5);
+        x = BBX;
+        y = BBY;
       }
       else if (deviceUID == SMALLBOT_ID) {
-        offset1 = averageCalibration[0] - pow(SBX*SBX + SBY*SBY, 0.5);
-        offset2 = averageCalibration[1] - pow((X2-SBX)*(X2-SBX) + SBY*SBY, 0.5);
-        offset3 = averageCalibration[2] - pow((X3-SBX)*((X3-SBX)) + (Y3-SBY)*(Y3-SBY), 0.5);
+        x = SBX;
+        y = SBY;
       }
+      offset1 = averageCalibration[0] - pow((X1-x)*(X1-x) + (Y1-y)*(Y1-y), 0.5);
+      offset2 = averageCalibration[1] - pow((X2-x)*(X2-x) + (Y2-y)*(Y2-y), 0.5);
+      offset3 = averageCalibration[2] - pow((X3-x)*(X3-x) + (Y3-y)*(Y3-y), 0.5);
     }
   }
 }

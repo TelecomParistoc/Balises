@@ -208,6 +208,28 @@ static int cholsl(float * A, float * a, float * p, int n)
   return 0; /* success */
 }
 
+static struct point_t LSQ(float d1, float d2, float d3) {
+  float A[2][2] = {{2*(X1-X3), 2*(Y1-Y3)}, {2*(X2-X3), 2*(Y2-Y3)}};
+  float b[2][1] = {{pow(X1,2)-pow(X3,2)+pow(Y1,2)-pow(Y3,2)+pow(d3,2)-pow(d1,2)}, {pow(X2,2)-pow(X3,2)+pow(Y2,2)-pow(Y3,2)+pow(d3,2)-pow(d2,2)}};
+
+  float At[2][2];
+  transposeMatrix(2, 2, A, At);
+  float AtA[2][2];
+  multiplyMatrices(2, 2, 2, At, A, AtA);
+  float Atb[2][1];
+  multiplyMatrices(2, 2, 1, At, b, Atb);
+  float array[2];
+  float inv[2][2];
+  cholsl(&AtA[0][0], &inv[0][0], &array[0], 2);
+  float xVect[2][1];
+  multiplyMatrices(2, 2, 1, inv, Atb, xVect);
+
+  struct point_t ret;
+  ret.a = xVect[0][0];
+  ret.b = xVect[1][0];
+  return ret;
+}
+
 struct point_t kalmanIteration(float d1, float d2, float d3) {
   float x, y, z;
   float distances[3] = {d1, d2, d3};
@@ -218,7 +240,9 @@ struct point_t kalmanIteration(float d1, float d2, float d3) {
   z = pow(fabs(pow(distancesWGN[0], 2) - pow(x, 2) - pow(y, 2)), 0.5);
   // TODO: check z against its real value to determine incoherent measures
 
-  float input[2][1] = {{x},{y}};
+  struct point_t lsq = LSQ(distancesWGN[0], distancesWGN[1], distancesWGN[2]);
+
+  float input[2][1] = {{lsq.a}, {lsq.b}};
 
   // Compute current state estimate
   float Xproj[6][1];

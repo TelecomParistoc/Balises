@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "kalman.h"
 #include "usbconf.h"
+#include "radioconf.h"
 
 #define  PI 3.1415926
 
@@ -202,11 +203,33 @@ void initKalmanCst() {
   transposeMatrix(2, 6, H, Ht);
 }
 
+static void LSQ(float d1, float d2, float d3, float * x, float * y) {
+  float A[2][2] = {{2*(X1-X3), 2*(Y1-Y3)}, {2*(X2-X3), 2*(Y2-Y3)}};
+  float b[2][1] = {{pow(X1,2)-pow(X3,2)+pow(Y1,2)-pow(Y3,2)+pow(d3,2)-pow(d1,2)}, {pow(X2,2)-pow(X3,2)+pow(Y2,2)-pow(Y3,2)+pow(d3,2)-pow(d2,2)}};
+
+  float At[2][2];
+  transposeMatrix(2, 2, A, At);
+  float AtA[2][2];
+  multiplyMatrices(2, 2, 2, At, A, AtA);
+  float Atb[2][1];
+  multiplyMatrices(2, 2, 1, At, b, Atb);
+  float array[2];
+  float inv[2][2];
+  cholsl(&AtA[0][0], &inv[0][0], &array[0], 2);
+  float xVect[2][1];
+  multiplyMatrices(2, 2, 1, inv, Atb, xVect);
+
+  *x = xVect[0][0];
+  *y = xVect[1][0];
+}
+
 void kalmanIteration(float d1, float d2, float d3) {
   float x, y;
 
-  x = (d1*d1-d2*d2+X2*X2)/(2*X2);
-  y = (d1*d1-d3*d3+X3*X3+Y3*Y3-2*X3*x)/(2*Y3);
+  LSQ(d1, d2, d3, &x, &y);
+
+  // x = (d1*d1-d2*d2+X2*X2)/(2*X2);
+  // y = (d1*d1-d3*d3+X3*X3+Y3*Y3-2*X3*x)/(2*Y3);
   // z = pow(fabs(pow(d1, 2) - pow(x, 2) - pow(y, 2)), 0.5);
   // TODO: check z against its real value to determine incoherent measures
 

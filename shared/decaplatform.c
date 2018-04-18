@@ -13,6 +13,7 @@
 
 // 2.25MHz SPI configuration, CPHA=0, CPOL=0
 static const SPIConfig slowspiconfig = {
+  false,
 	NULL,
 	GPIOB,
 	GPIOB_DWM_nCS,
@@ -21,6 +22,7 @@ static const SPIConfig slowspiconfig = {
 };
 // 18MHz SPI configuration, CPHA=0, CPOL=0
 static const SPIConfig spiconfig = {
+  false,
 	NULL,
 	GPIOB,
 	GPIOB_DWM_nCS,

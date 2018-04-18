@@ -114,7 +114,7 @@ vpath %.h src
 RTTSRC    = src/RTT/SEGGER_RTT.c src/RTT/SEGGER_RTT_printf.c
 
 RADIOSRC = radiocomms.c decaplatform.c decafunctions.c deca_device.c \
-           deca_params_init.c radioconf.c kalman.c
+           deca_params_init.c radioconf.c kalman.c spicomms.c
 DRIVERSRC = flash.c exticonf.c nonvolatile.c usbconf.c battery.c
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global

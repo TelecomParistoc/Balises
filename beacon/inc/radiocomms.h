@@ -19,6 +19,9 @@ extern struct robotData radioData;
 /* distances to the anchors */
 extern int16_t distances[3];
 
+/* state of the calibratoion */
+extern int calibration;
+
 /* initialize decawave module and start radio communication thread */
 void startRadio(void);
 

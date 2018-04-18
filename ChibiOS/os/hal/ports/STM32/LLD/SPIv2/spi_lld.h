@@ -418,6 +418,10 @@ typedef void (*spicallback_t)(SPIDriver *spip);
  */
 typedef struct {
   /**
+   * @brief SPI Slave mode flag.
+  */
+  bool                      slave_mode;
+  /**
    * @brief Operation complete callback or @p NULL.
    */
   spicallback_t             end_cb;

@@ -6,6 +6,7 @@
 #include "usbconf.h"
 #include "exticonf.h"
 #include "radiocomms.h"
+#include "spicomms.h"
 #include "nonvolatile.h"
 #include "../shared/battery.h"
 
@@ -37,6 +38,9 @@ int main(void) {
 
 	// start radio thread
 	startRadio();
+
+  // start SPI thread
+  startSPI();
 
 	while(1) {
 		if(!sh && SDU1.config->usbp->state == USB_ACTIVE) {
