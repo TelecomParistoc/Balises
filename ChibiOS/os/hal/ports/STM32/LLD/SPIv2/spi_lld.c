@@ -428,11 +428,10 @@ void spi_lld_start(SPIDriver *spip) {
   spip->spi->CR1  = 0;
   if (spip->config->slave_mode) {
     spip->spi->CR1  = spip->config->cr1;
-    spip->spi->CR2  = SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN;
+    spip->spi->CR2  = SPI_CR2_FRXTH | SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN;
   } else {
-    spip->spi->CR1  = spip->config->cr1 | SPI_CR1_MSTR | SPI_CR1_SSM |
-                      SPI_CR1_SSI;
-    spip->spi->CR2  = SPI_CR2_SSOE | SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN;
+    spip->spi->CR1  = spip->config->cr1 | SPI_CR1_MSTR;
+    spip->spi->CR2  = spip->config->cr2 | SPI_CR2_FRXTH | SPI_CR2_SSOE | SPI_CR2_RXDMAEN | SPI_CR2_TXDMAEN;
   }
   spip->spi->CR1 |= SPI_CR1_SPE;
 }

@@ -19,7 +19,8 @@ static const SPIConfig spi2_cfg = {
    .end_cb     = NULL,
    .ssport     = GPIOB,
    .sspad      = GPIOB_MOT_nCS,
-   .cr1        = 0, // SPI_MODE_0.
+   .cr1        = 0,
+  //  .cr1        = SPI_CR1_BR_1 | SPI_CR1_BR_0,
    .cr2        = 0
 };
 
@@ -28,7 +29,7 @@ static const SPIConfig spi2_master = {
    .end_cb     = NULL,
    .ssport     = GPIOB,
    .sspad      = GPIOB_MOT_nCS,
-   .cr1        = 0, // SPI_MODE_0.
+   .cr1        = SPI_CR1_BR_1 | SPI_CR1_BR_0,
    .cr2        = 0
 };
 
@@ -117,54 +118,74 @@ static void tl_start_send(void)
 }
 
 
-// static THD_WORKING_AREA(waSPI, 256);
-// static THD_FUNCTION(spi_thread, th_data) {
-//   (void) th_data;
-//
-//   chRegSetThreadName("SPI slave thread");
-//
-//   while (true) {
-//     tl_start_receive();
-//     switch(rxbuff[0]) {
-//       case 1: // sendX
-//         txbuff[0] = (uint16_t) xVect[0][0];
-//         txbuff[1] = ((uint16_t) xVect[0][0]) >> 8;
-//         break;
-//       case 2: // sendY
-//         txbuff[0] = (uint16_t) xVect[1][0];
-//         txbuff[1] = ((uint16_t) xVect[1][0]) >> 8;
-//         break;
-//       case 3: // sendD1
-//         printf("Haha\n");
-//         break;
-//       case 4: // sendD2
-//         // TODO
-//         break;
-//       case 5: // start calibration
-//         calibration = 1;
-//         break;
-//       case 6: // reposition
-//         // TODO
-//         break;
-//     }
-//     tl_start_send();
-//   }
-// }
-
 static THD_WORKING_AREA(waSPI, 256);
-static THD_FUNCTION(spi_thread, p) {
+static THD_FUNCTION(spi_thread, th_data) {
+  (void) th_data;
 
-  (void)p;
+  chRegSetThreadName("SPI slave thread");
+  bool sendBack = false;
+  uint16_t cmpt = 0;
+  for (int i = 0; i < TL_PACKET_SIZE; i++) {
+    txbuff[i] = 255;
+  }
 
-  chRegSetThreadName("SPI thread master");
-  spiStart(&SPID2, &spi2_master);       /* Setup transfer parameters.       */
-  spiSelect(&SPID2);                    /* Slave Select assertion.          */
   while (true) {
-    uint8_t txbuf[TL_PACKET_SIZE];
-    txbuff[0] = 3;
-    spiSend (&SPID2, TL_PACKET_SIZE, txbuf);
+    for (int i = 0; i < TL_PACKET_SIZE; i++) {
+      txbuff[i] = 255;
+    }
+    tl_start_receive();
+    switch(rxbuff[0]) {
+      case 1: // sendX
+        txbuff[0] = (uint16_t) xVect[0][0];
+        txbuff[1] = ((uint16_t) xVect[0][0]) >> 8;
+        sendBack = true;
+        break;
+      case 2: // sendY
+        txbuff[0] = (uint16_t) xVect[1][0];
+        txbuff[1] = ((uint16_t) xVect[1][0]) >> 8;
+        sendBack = true;
+        break;
+      case 3: // sendD1
+        txbuff[0] = (uint16_t) cmpt;
+        txbuff[1] = ((uint16_t) cmpt) >> 8;
+        sendBack = true;
+        break;
+      case 4: // sendD2
+        // TODO
+        break;
+      case 5: // start calibration
+        calibration = 1;
+        break;
+      case 6: // reposition
+        // TODO
+        break;
+    }
+    if (sendBack) {
+      tl_start_send();
+      sendBack = false;
+    }
+    cmpt ++;
   }
 }
+
+// static THD_WORKING_AREA(waSPI, 256);
+// static THD_FUNCTION(spi_thread, p) {
+//
+//   (void)p;
+//
+//   chRegSetThreadName("SPI thread master");
+//   palSetLine(LINE_MOT_nCS);
+//   spiStart(&SPID2, &spi2_master);
+//   while (true) {
+//     spiSelect(&SPID2);
+//     uint8_t rxbuf[TL_PACKET_SIZE];
+//     uint8_t txbuf[TL_PACKET_SIZE];
+//     txbuf[0] = 3;
+//     spiSend(&SPID2, TL_PACKET_SIZE, txbuf);
+//     spiReceive(&SPID2, TL_PACKET_SIZE, rxbuf);
+//     spiUnselect(&SPID2);
+//   }
+// }
 
 void startSPI(void) {
   chThdCreateStatic(waSPI, sizeof(waSPI), NORMALPRIO+1, spi_thread, NULL);
