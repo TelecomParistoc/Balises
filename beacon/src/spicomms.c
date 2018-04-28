@@ -6,22 +6,31 @@
 #include "usbconf.h"
 #include "spicomms.h"
 
-#define TL_PACKET_SIZE 5
+#define TL_PACKET_SIZE_MOSI 6
+#define TL_PACKET_SIZE_MISO 2
 
 /*
  * SPI TX and RX buffers.
  */
-static uint8_t txbuff[TL_PACKET_SIZE];
-static uint8_t rxbuff[TL_PACKET_SIZE];
+static uint8_t mosiBuff[TL_PACKET_SIZE_MOSI];
+static uint8_t misoBuff[TL_PACKET_SIZE_MISO];
 
-static const SPIConfig spi2_cfg = {
+static const SPIConfig spi2_slave = {
    .slave_mode = true,
    .end_cb     = NULL,
    .ssport     = GPIOB,
    .sspad      = GPIOB_MOT_nCS,
    .cr1        = 0,
-  //  .cr1        = SPI_CR1_BR_1 | SPI_CR1_BR_0,
    .cr2        = 0
+};
+
+static const SPIConfig spi2_slave_sync = {
+   .slave_mode = true,
+   .end_cb     = NULL,
+   .ssport     = GPIOB,
+   .sspad      = GPIOB_MOT_nCS,
+   .cr1        = 0,
+   .cr2        = SPI_CR2_DS_2 | SPI_CR2_DS_1 // 7-bits
 };
 
 static const SPIConfig spi2_master = {
@@ -29,7 +38,7 @@ static const SPIConfig spi2_master = {
    .end_cb     = NULL,
    .ssport     = GPIOB,
    .sspad      = GPIOB_MOT_nCS,
-   .cr1        = SPI_CR1_BR_1 | SPI_CR1_BR_0,
+   .cr1        = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0,
    .cr2        = 0
 };
 
@@ -103,8 +112,20 @@ static void sspiReceive(SPIDriver *spip, size_t n, void *rxbuf) {
 static void tl_start_receive(void)
 {
   //  tl_state = receive_packet;
-   spiStart(&SPID2, &spi2_cfg);
-   sspiReceive(&SPID2, TL_PACKET_SIZE, rxbuff);
+  spiStart(&SPID2, &spi2_slave);
+  sspiReceive(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
+  while (mosiBuff[0] != 230) {
+    uint8_t dummy[TL_PACKET_SIZE_MISO];
+
+    spiStart(&SPID2, &spi2_slave);
+    sspiReceive(&SPID2, TL_PACKET_SIZE_MISO, dummy);
+
+    spiStart(&SPID2, &spi2_slave_sync);
+    sspiReceive(&SPID2, 1, dummy);
+
+    spiStart(&SPID2, &spi2_slave);
+    sspiReceive(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
+  }
 }
 
 /**
@@ -113,8 +134,8 @@ static void tl_start_receive(void)
 static void tl_start_send(void)
 {
   //  tl_state = send_packet;
-   spiStart(&SPID2, &spi2_cfg);
-   sspiSend(&SPID2, TL_PACKET_SIZE, txbuff);
+   spiStart(&SPID2, &spi2_slave);
+   sspiSend(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
 }
 
 
@@ -123,32 +144,23 @@ static THD_FUNCTION(spi_thread, th_data) {
   (void) th_data;
 
   chRegSetThreadName("SPI slave thread");
-  bool sendBack = false;
-  uint16_t cmpt = 0;
-  for (int i = 0; i < TL_PACKET_SIZE; i++) {
-    txbuff[i] = 255;
-  }
+  uint8_t cmpt = 0;
 
   while (true) {
-    for (int i = 0; i < TL_PACKET_SIZE; i++) {
-      txbuff[i] = 255;
-    }
     tl_start_receive();
-    switch(rxbuff[0]) {
+    /*
+    switch(mosiBuff[1]) {
       case 1: // sendX
-        txbuff[0] = (uint16_t) xVect[0][0];
-        txbuff[1] = ((uint16_t) xVect[0][0]) >> 8;
-        sendBack = true;
+        misoBuff[0] = (uint16_t) xVect[0][0];
+        misoBuff[1] = ((uint16_t) xVect[0][0]) >> 8;
         break;
       case 2: // sendY
-        txbuff[0] = (uint16_t) xVect[1][0];
-        txbuff[1] = ((uint16_t) xVect[1][0]) >> 8;
-        sendBack = true;
+        misoBuff[0] = (uint16_t) xVect[1][0];
+        misoBuff[1] = ((uint16_t) xVect[1][0]) >> 8;
         break;
       case 3: // sendD1
-        txbuff[0] = (uint16_t) cmpt;
-        txbuff[1] = ((uint16_t) cmpt) >> 8;
-        sendBack = true;
+        misoBuff[0] = cmpt;
+        misoBuff[1] = mosiBuff[1];
         break;
       case 4: // sendD2
         // TODO
@@ -160,10 +172,11 @@ static THD_FUNCTION(spi_thread, th_data) {
         // TODO
         break;
     }
-    if (sendBack) {
-      tl_start_send();
-      sendBack = false;
-    }
+    */
+    misoBuff[0] = cmpt;
+    misoBuff[1] = mosiBuff[2];
+
+    tl_start_send();
     cmpt ++;
   }
 }
@@ -173,16 +186,19 @@ static THD_FUNCTION(spi_thread, th_data) {
 //
 //   (void)p;
 //
+//   uint8_t cmpt = 0;
+//
 //   chRegSetThreadName("SPI thread master");
-//   palSetLine(LINE_MOT_nCS);
+//   // palSetLine(LINE_MOT_nCS);
 //   spiStart(&SPID2, &spi2_master);
 //   while (true) {
 //     spiSelect(&SPID2);
-//     uint8_t rxbuf[TL_PACKET_SIZE];
-//     uint8_t txbuf[TL_PACKET_SIZE];
-//     txbuf[0] = 3;
-//     spiSend(&SPID2, TL_PACKET_SIZE, txbuf);
-//     spiReceive(&SPID2, TL_PACKET_SIZE, rxbuf);
+//     mosiBuff[0] = 230;
+//     mosiBuff[1] = cmpt;
+//     mosiBuff[2] = misoBuff[0];
+//     spiSend(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
+//     spiReceive(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
+//     cmpt++;
 //     spiUnselect(&SPID2);
 //   }
 // }
