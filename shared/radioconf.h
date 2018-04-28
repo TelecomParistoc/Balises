@@ -46,7 +46,7 @@
 #define TIMESLOT_LENGTH 2
 
 /* total length of a frame in number of time slots */
-#define FRAME_LENGTH 17
+#define FRAME_LENGTH 13
 
 /* parts that should be transmitting in each time slot (defined in radioconf.c) */
 extern const char TXtimeTable[];
