@@ -37,12 +37,15 @@ p4 = win.addPlot(title="Table")
 label = pg.LabelItem(justify='right')
 win.addItem(label)
 
-n = 5
+n = 4
 s1 = pg.ScatterPlotItem(size=10, pen=pg.mkPen(None), brush=pg.mkBrush(255, 255, 255, 120))
 pos = np.zeros(shape=(2,n))
-pos[0][1] = 3000
-pos[0][2] = 1500
-pos[1][2] = 2000
+pos[0][0] = -60
+pos[1][0] = 1000
+pos[0][1] = 3060
+pos[1][1] = 1950
+pos[0][2] = 3060
+pos[1][2] = 50
 lines = [1700,2800,940]
 spots = [{'pos': pos[:,i], 'data': 1} for i in range(n)]
 s1.addPoints(spots)
@@ -66,8 +69,8 @@ def mouseMoved(evt):
         label.setText("<span style='font-size: 12pt'>x=%0.1f<br />y=%0.1f</span>" % (mousePoint.x(), mousePoint.y()))
         vLine.setPos(mousePoint.x())
         hLine.setPos(mousePoint.y())
-        lines[0] = ((mousePoint.x())**2 + (mousePoint.y())**2)**0.5
-        lines[1] = ((mousePoint.x() - pos[0][1])**2 + (mousePoint.y())**2)**0.5
+        lines[0] = ((mousePoint.x() - pos[0][0])**2 + (mousePoint.y() - pos[1][0])**2)**0.5
+        lines[1] = ((mousePoint.x() - pos[0][1])**2 + (mousePoint.y() - pos[1][1])**2)**0.5
         lines[2] = ((mousePoint.x() - pos[0][2])**2 + (mousePoint.y() - pos[1][2])**2)**0.5
 
 
@@ -113,19 +116,8 @@ def update():
     x = ret.x
     y = ret.y
 
-    triX = (d1**2-d2**2+pos[0][1]**2)/(2*pos[0][1])
-    triY = (d1**2-d3**2+pos[0][2]**2+pos[1][2]**2-2*pos[0][2]*triX)/(2*pos[1][2])
-
-
-
-    pos[0][3] = triX
-    pos[1][3] = triY
-
-    pos[0][4] = x
-    pos[1][4] = y
-
-    # print x, y
-    # print triX, triY
+    pos[0][3] = x
+    pos[1][3] = y
 
     spots = [{'pos': pos[:,i], 'data': 1, 'symbol': 0} for i in range(n-1)] + [{'pos': pos[:,n-1], 'data': 1, 'symbol': 1}]
     s1.clear()
@@ -133,7 +125,7 @@ def update():
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
-timer.start(35)
+timer.start(26)
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':

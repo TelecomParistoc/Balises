@@ -4,8 +4,6 @@
 #include "usbconf.h"
 #include "radioconf.h"
 
-#define  PI 3.1415926
-
 float var;
 float dt;
 float q;
@@ -153,7 +151,7 @@ void addMatrices(int rows, int columns, float a[][columns], float b[][columns], 
 
 void initKalmanCst() {
   var = 1e010;
-  dt = 0.03468;
+  dt = 0.026;
   q = 1000;
 
   int i, j;

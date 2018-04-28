@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define X1 0
-#define X2 3000
-#define X3 1500
-#define Y1 0
-#define Y2 0
-#define Y3 2000
+#define X1 (-60)
+#define Y1 1000
+#define X2 3060
+#define Y2 1950
+#define X3 3060
+#define Y3 50
 
 float var;
 float dt;

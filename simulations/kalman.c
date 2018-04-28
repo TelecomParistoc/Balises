@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "kalman.h"
 
-#define  PI 3.1415926
+#define  PI 3.14159265358979323846
 
 void printMatrix(int rows, int columns, float a[][columns]) {
 	int i, j;
@@ -91,7 +91,7 @@ void awgn (int n, float mean, float variance, const float arrayIn[3], float arra
 
 void initCst() {
   var = 1e010;
-  dt = 0.03468;
+  dt = 0.026;
   q = 100000;
 
   int i, j;
