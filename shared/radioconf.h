@@ -32,15 +32,15 @@
 #define SMALLBOT_ID 0x40
 
 /* beacons position */
-#define X1 0
-#define X2 3000
-#define X3 1500
-#define Y1 0
-#define Y2 0
-#define Y3 2000
-#define Z1 200
-#define Z2 200
-#define Z3 200
+#define X1 (-60)
+#define Y1 1000
+#define X2 3060
+#define Y2 1950
+#define X3 3060
+#define Y3 50
+#define Z1 430
+#define Z2 430
+#define Z3 430
 
 /* time slot length in ms */
 #define TIMESLOT_LENGTH 2

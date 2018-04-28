@@ -46,7 +46,7 @@ the same time slot, when ranging). <br>
 | 9         | ranging |    |    | RX | TX |    |    |    |
 | 10        | ranging |    | RX |    | TX |    |    |    |
 | 11        | ranging | RX |    |    | TX |    |    |    |
-| 12        | data    |(RX)|(RX)|(RX)| TX | RX |    |    |
+| 12        | data    |(RX)|(RX)|(RX)| TX | RX | RX | RX |
 | 13        | ranging |    |    | RX |    | TX |    |    |
 | 14        | ranging |    | RX |    |    | TX |    |    |
 | 15        | ranging | RX |    |    |    | TX |    |    |

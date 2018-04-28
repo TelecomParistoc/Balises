@@ -166,7 +166,8 @@ static THD_FUNCTION(spi_thread, th_data) {
         // TODO
         break;
       case 5: // start calibration
-        calibration = 1;
+        if (calibration == 0)
+          calibration = 1;
         break;
       case 6: // reposition
         // TODO

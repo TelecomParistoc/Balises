@@ -16,17 +16,21 @@
 
 #define CALIBRATION_STEPS 100
 
+// Initial position of the robots
 #define BBX 200
 #define BBY 1800
+#define BBZ 400
 #define SBX 200
 #define SBY 1600
+#define SBZ 400
 
 // Distances to anchors
 int16_t distances[3] = {0, 0, 0};
 int16_t unfiltered[9];
+
 // information of the robot
 struct robotData radioData;
-int calibration = 0;
+volatile int calibration = 0;
 
 void computeCoordinates() {
   // Wikipedia formula:
@@ -91,6 +95,11 @@ static THD_FUNCTION(radioThread, th_data) {
           radioBuffer[23] = radioBuffer[24] = 0;
           radioBuffer[25] = 0;
 
+          if (calibration == 1)
+            radioBuffer[57] = CAL_MSG;
+          else
+            radioBuffer[57] = 0;
+
           // send data message
           ret = messageSend(i*TIMESLOT_LENGTH, 0, 26);
           if(ret == -4)
@@ -130,47 +139,38 @@ static THD_FUNCTION(radioThread, th_data) {
             if (deviceUID == BIGBOT_ID) {
               distances[11-i] = distanceInMm;
               if (calibration > 0) {
-                averageCalibration[11-i] = (averageCalibration[11-i]*calibration + distanceInMm)/(calibration+1);
+                averageCalibration[11-i] = (averageCalibration[11-i]*(calibration-1) + distanceInMm)/calibration;
+                calibration ++;
               }
             }
             else if (deviceUID == SMALLBOT_ID) {
               distances[15-i] = distanceInMm;
               if (calibration > 0) {
-                averageCalibration[15-i] = (averageCalibration[15-i]*calibration + distanceInMm)/(calibration+1);
+                averageCalibration[15-i] = (averageCalibration[15-i]*(calibration-1) + distanceInMm)/calibration;
+                calibration ++;
               }
             }
           }
         }
       }
-
-      // if beacon is supposed to receive a message
-      else if(deviceUID & RXtimeTable[i]) {
-        ret = messageReceive(i*TIMESLOT_LENGTH);
-        // if it's a robot data message
-        if(ret > 1 && radioBuffer[0] == DATA_MSG) {
-          // if BigBot sends a calibration order
-          if (radioBuffer[57] == CAL_MSG)
-            calibration = 1;
-        }
-      }
     }
 
-    if (calibration > 0 && calibration < CALIBRATION_STEPS)
-      calibration++;
-    else if (calibration > 0) {
+    if (calibration == CALIBRATION_STEPS + 1) {
       calibration = 0;
-      int x, y;
+      int x, y, z;
       if (deviceUID == BIGBOT_ID) {
         x = BBX;
         y = BBY;
+        z = BBZ;
       }
       else if (deviceUID == SMALLBOT_ID) {
         x = SBX;
         y = SBY;
+        z = SBZ;
       }
-      offset1 = averageCalibration[0] - pow((X1-x)*(X1-x) + (Y1-y)*(Y1-y), 0.5);
-      offset2 = averageCalibration[1] - pow((X2-x)*(X2-x) + (Y2-y)*(Y2-y), 0.5);
-      offset3 = averageCalibration[2] - pow((X3-x)*(X3-x) + (Y3-y)*(Y3-y), 0.5);
+      offset1 = averageCalibration[0] - pow((X1-x)*(X1-x) + (Y1-y)*(Y1-y) + (Z1-z)*(Z1-z), 0.5);
+      offset2 = averageCalibration[1] - pow((X2-x)*(X2-x) + (Y2-y)*(Y2-y) + (Z2-z)*(Z2-z), 0.5);
+      offset3 = averageCalibration[2] - pow((X3-x)*(X3-x) + (Y3-y)*(Y3-y) + (Z3-z)*(Z3-z), 0.5);
     }
   }
 }
