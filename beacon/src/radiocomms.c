@@ -28,6 +28,9 @@
 int16_t distances[3] = {0, 0, 0};
 int16_t unfiltered[9];
 
+int16_t SFCoordinates[2];
+int16_t BFCoordinates[2];
+
 // information of the robot
 struct robotData radioData;
 volatile int calibration = 0;
@@ -150,6 +153,27 @@ static THD_FUNCTION(radioThread, th_data) {
                 calibration ++;
               }
             }
+          }
+        }
+      }
+
+      // if beacon is supposed to receive a message
+      else if(deviceUID & RXtimeTable[i]) {
+        ret = messageReceive(i*TIMESLOT_LENGTH);
+        // if it's a robot data message
+        if(ret > 1 && radioBuffer[0] == DATA_MSG) {
+          // store coordinates of foes
+          if (BIGFOE_ID & TXtimeTable[i]) {
+            BFCoordinates[0] = radioBuffer[1];
+            BFCoordinates[0] |= (radioBuffer[2] << 8);
+            BFCoordinates[1] = radioBuffer[3];
+            BFCoordinates[1] |= (radioBuffer[4] << 8);
+          }
+          else if (SMALLFOE_ID & TXtimeTable[i]) {
+            SFCoordinates[0] = radioBuffer[1];
+            SFCoordinates[0] |= (radioBuffer[2] << 8);
+            SFCoordinates[1] = radioBuffer[3];
+            SFCoordinates[1] |= (radioBuffer[4] << 8);
           }
         }
       }

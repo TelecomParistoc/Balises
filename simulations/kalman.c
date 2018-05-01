@@ -58,10 +58,9 @@ void addMatrices(int rows, int columns, float a[][columns], float b[][columns], 
 	}
 }
 
-void awgn (int n, float mean, float variance, const float arrayIn[3], float arrayOut[3]) {
-  int    i, j;
-  float   **img;
-  float x1, x2, tmp, x, xn, y, yn;
+void awgn (const int n, const float mean[n], const float variance[n], const float arrayIn[n], float arrayOut[n]) {
+  int    i;
+  float x1, x2, tmp, x, xn;
 
   for (i=0; i<n; i++) {
     arrayOut[i] = arrayIn[i];
@@ -74,12 +73,10 @@ void awgn (int n, float mean, float variance, const float arrayIn[3], float arra
     while (x1 == 0);    // x1 can't be zero
     x2 = (float)rand()/RAND_MAX;
 
-    // x, y: unit normal random variables, ~N(0, 1)
-    // xn, yn: normal random variables, ~N(mean, variance)
+    // x: unit normal random variables, ~N(0, 1)
+    // xn: normal random variables, ~N(mean, variance)
     x = sqrt(-2*log(x1)) * cos(2*PI*x2);
-    xn = mean + sqrt(variance) * x;
-    // y = sqrt(-2*log(x1)) * sin(2*PI*x2);
-    // yn = mean + sqrt(variance) * y;
+    xn = mean[i] + sqrt(variance[i]) * x;
 
     tmp = arrayIn[i] + xn;   // Add noise to pixel
     if (tmp < 0)
@@ -94,7 +91,7 @@ void initCst() {
   dt = 0.026;
   q = 100000;
 
-  int i, j;
+  int i;
   for (i=0;i<6;i++) {
     P[i][i] = 1;
     xVect[i][0] = 0;
@@ -225,20 +222,17 @@ static struct point_t LSQ(float d1, float d2, float d3) {
   multiplyMatrices(2, 2, 1, inv, Atb, xVect);
 
   struct point_t ret;
-  ret.a = xVect[0][0];
-  ret.b = xVect[1][0];
+  ret.a = (xVect[0][0] < 4000 && xVect[0][0] > -1000) ? xVect[0][0] : 0;
+  ret.b = (xVect[1][0] < 3000 && xVect[1][0] > -1000) ? xVect[1][0] : 0;
   return ret;
 }
 
 struct point_t kalmanIteration(float d1, float d2, float d3) {
-  float x, y, z;
   float distances[3] = {d1, d2, d3};
   float distancesWGN[3] = {0, 0, 0};
-  awgn(3, 0, 729, distances, distancesWGN);
-  x = (pow(distancesWGN[0], 2)-pow(distancesWGN[1], 2)+X2*X2)/(2*X2);
-  y = (pow(distancesWGN[0], 2)-pow(distancesWGN[2], 2)+X3*X3+Y3*Y3-2*X3*x)/(2*Y3);
-  z = pow(fabs(pow(distancesWGN[0], 2) - pow(x, 2) - pow(y, 2)), 0.5);
-  // TODO: check z against its real value to determine incoherent measures
+  float mean[3] = {0, 0, 0};
+  float variance[3] = {729, 729, 729};
+  awgn(3, mean, variance, distances, distancesWGN);
 
   struct point_t lsq = LSQ(distancesWGN[0], distancesWGN[1], distancesWGN[2]);
 
@@ -271,7 +265,7 @@ struct point_t kalmanIteration(float d1, float d2, float d3) {
 
   // Compute K
   float array[2];
-  cholsl(S, tmp, array, 2);
+  cholsl(&S[0][0], &tmp[0][0], &array[0], 2);
 
   float K[6][2];
   multiplyMatrices(6, 2, 2, PH, tmp, K);

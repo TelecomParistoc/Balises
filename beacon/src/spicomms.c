@@ -7,7 +7,12 @@
 #include "spicomms.h"
 
 #define TL_PACKET_SIZE_MOSI 6
-#define TL_PACKET_SIZE_MISO 2
+#define TL_PACKET_SIZE_MISO 12
+
+#define CALIBRATION_SYMBOL 0b1101
+#define REPOSITION_SYMBOL 0b1011
+
+#define MODE 2
 
 /*
  * SPI TX and RX buffers.
@@ -15,13 +20,56 @@
 static uint8_t mosiBuff[TL_PACKET_SIZE_MOSI];
 static uint8_t misoBuff[TL_PACKET_SIZE_MISO];
 
+#if MODE == 1
+
+static const SPIConfig spi2_master = {
+   .slave_mode = false,
+   .end_cb     = NULL,
+   .ssport     = GPIOB,
+   .sspad      = GPIOB_MOT_nCS,
+   .cr1        = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0, // 140kHz
+   .cr2        = 0
+};
+
+static THD_WORKING_AREA(waSPI, 256);
+static THD_FUNCTION(spi_thread, p) {
+
+  (void)p;
+
+  chRegSetThreadName("SPI thread master");
+
+  uint8_t cmpt = 0;
+
+  spiStart(&SPID2, &spi2_master);
+
+  while (true) {
+    spiSelect(&SPID2);
+    mosiBuff[0] = 230;  // synchronization byte
+    mosiBuff[1] = cmpt; // calibration and reposition byte
+    if (calibration == 1) {
+      mosiBuff[1] &= 0xf0;
+      mosiBuff[1] |= CALIBRATION_SYMBOL;
+    }
+    // TODO: reposition
+    mosiBuff[2] = 153;
+    mosiBuff[3] = misoBuff[0];
+    spiSend(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
+    spiReceive(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
+    cmpt++;
+    spiUnselect(&SPID2);
+    chThdSleepMilliseconds(10);
+  }
+}
+
+#elif MODE == 2
+
 static const SPIConfig spi2_slave = {
    .slave_mode = true,
    .end_cb     = NULL,
    .ssport     = GPIOB,
    .sspad      = GPIOB_MOT_nCS,
    .cr1        = 0,
-   .cr2        = 0
+   .cr2        = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0 // 8-bits
 };
 
 static const SPIConfig spi2_slave_sync = {
@@ -31,15 +79,6 @@ static const SPIConfig spi2_slave_sync = {
    .sspad      = GPIOB_MOT_nCS,
    .cr1        = 0,
    .cr2        = SPI_CR2_DS_2 | SPI_CR2_DS_1 // 7-bits
-};
-
-static const SPIConfig spi2_master = {
-   .slave_mode = false,
-   .end_cb     = NULL,
-   .ssport     = GPIOB,
-   .sspad      = GPIOB_MOT_nCS,
-   .cr1        = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0,
-   .cr2        = 0
 };
 
 #if (SPI_USE_WAIT != TRUE)
@@ -120,8 +159,9 @@ static void tl_start_receive(void)
     spiStart(&SPID2, &spi2_slave);
     sspiReceive(&SPID2, TL_PACKET_SIZE_MISO, dummy);
 
+    uint8_t dummy1[1] = {0};
     spiStart(&SPID2, &spi2_slave_sync);
-    sspiReceive(&SPID2, 1, dummy);
+    sspiSend(&SPID2, 1, dummy1);
 
     spiStart(&SPID2, &spi2_slave);
     sspiReceive(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
@@ -138,7 +178,6 @@ static void tl_start_send(void)
    sspiSend(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
 }
 
-
 static THD_WORKING_AREA(waSPI, 256);
 static THD_FUNCTION(spi_thread, th_data) {
   (void) th_data;
@@ -148,61 +187,41 @@ static THD_FUNCTION(spi_thread, th_data) {
 
   while (true) {
     tl_start_receive();
-    /*
-    switch(mosiBuff[1]) {
-      case 1: // sendX
-        misoBuff[0] = (uint16_t) xVect[0][0];
-        misoBuff[1] = ((uint16_t) xVect[0][0]) >> 8;
-        break;
-      case 2: // sendY
-        misoBuff[0] = (uint16_t) xVect[1][0];
-        misoBuff[1] = ((uint16_t) xVect[1][0]) >> 8;
-        break;
-      case 3: // sendD1
-        misoBuff[0] = cmpt;
-        misoBuff[1] = mosiBuff[1];
-        break;
-      case 4: // sendD2
-        // TODO
-        break;
-      case 5: // start calibration
-        if (calibration == 0)
-          calibration = 1;
-        break;
-      case 6: // reposition
-        // TODO
-        break;
+
+    // calibration
+    if ((mosiBuff[1] >> 4) == CALIBRATION_SYMBOL) {
+      if (calibration == 0)
+        calibration = 1;
     }
-    */
+    // reposition
+    if ((mosiBuff[1] & ~(0b1111 << 4)) == REPOSITION_SYMBOL) {
+      // TODO
+    }
+
+    misoBuff[0] = (uint16_t) xVect[0][0];
+    misoBuff[1] = ((uint16_t) xVect[0][0]) >> 8;
+    misoBuff[2] = (uint16_t) xVect[1][0];
+    misoBuff[3] = ((uint16_t) xVect[1][0]) >> 8;
+
+    misoBuff[4] = (uint16_t) SFCoordinates[0];
+    misoBuff[5] = ((uint16_t) SFCoordinates[0]) >> 8;
+    misoBuff[6] = (uint16_t) SFCoordinates[1];
+    misoBuff[7] = ((uint16_t) SFCoordinates[1]) >> 8;
+
+    misoBuff[8] = (uint16_t) BFCoordinates[0];
+    misoBuff[9] = ((uint16_t) BFCoordinates[0]) >> 8;
+    misoBuff[10] = (uint16_t) BFCoordinates[1];
+    misoBuff[11] = ((uint16_t) BFCoordinates[1]) >> 8;
+
     misoBuff[0] = cmpt;
-    misoBuff[1] = mosiBuff[2];
+    misoBuff[1] = mosiBuff[1];
 
     tl_start_send();
     cmpt ++;
   }
 }
 
-// static THD_WORKING_AREA(waSPI, 256);
-// static THD_FUNCTION(spi_thread, p) {
-//
-//   (void)p;
-//
-//   uint8_t cmpt = 0;
-//
-//   chRegSetThreadName("SPI thread master");
-//   // palSetLine(LINE_MOT_nCS);
-//   spiStart(&SPID2, &spi2_master);
-//   while (true) {
-//     spiSelect(&SPID2);
-//     mosiBuff[0] = 230;
-//     mosiBuff[1] = cmpt;
-//     mosiBuff[2] = misoBuff[0];
-//     spiSend(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
-//     spiReceive(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
-//     cmpt++;
-//     spiUnselect(&SPID2);
-//   }
-// }
+#endif
 
 void startSPI(void) {
   chThdCreateStatic(waSPI, sizeof(waSPI), NORMALPRIO+1, spi_thread, NULL);

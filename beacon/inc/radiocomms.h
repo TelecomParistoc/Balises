@@ -19,6 +19,9 @@ extern struct robotData radioData;
 /* distances to the anchors */
 extern int16_t distances[3];
 
+extern int16_t SFCoordinates[2];
+extern int16_t BFCoordinates[2];
+
 /* state of the calibratoion */
 extern volatile int calibration;
 
