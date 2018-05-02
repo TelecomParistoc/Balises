@@ -29,7 +29,7 @@ static const EXTConfig extcfg = {
 		{EXT_CH_MODE_DISABLED, NULL}, // 9
 		{EXT_CH_MODE_DISABLED, NULL}, // 10
 		{EXT_CH_MODE_DISABLED, NULL}, // 11
-		{EXT_CH_MODE_DISABLED, NULL}, // 12
+		{EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOB, NULL}, // 12
 		{EXT_CH_MODE_DISABLED, NULL}, // 13
 		{EXT_CH_MODE_DISABLED, NULL}, // 14
 		{EXT_CH_MODE_RISING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, decaIRQ_cb}, // 15
@@ -38,5 +38,6 @@ static const EXTConfig extcfg = {
 
 void initExti(void) {
 	extStart(&EXTD1, &extcfg);
+  extChannelEnable(&EXTD1, 12);
 	extChannelEnable(&EXTD1, 15);
 }

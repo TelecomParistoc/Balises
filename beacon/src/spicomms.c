@@ -12,6 +12,8 @@
 #define CALIBRATION_SYMBOL 0b1101
 #define REPOSITION_SYMBOL 0b1011
 
+#define EVT_nCS EVENT_MASK(12)
+
 #define MODE 2
 
 /*
@@ -70,15 +72,6 @@ static const SPIConfig spi2_slave = {
    .sspad      = GPIOB_MOT_nCS,
    .cr1        = 0,
    .cr2        = SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0 // 8-bits
-};
-
-static const SPIConfig spi2_slave_sync = {
-   .slave_mode = true,
-   .end_cb     = NULL,
-   .ssport     = GPIOB,
-   .sspad      = GPIOB_MOT_nCS,
-   .cr1        = 0,
-   .cr2        = SPI_CR2_DS_2 | SPI_CR2_DS_1 // 7-bits
 };
 
 #if (SPI_USE_WAIT != TRUE)
@@ -150,22 +143,8 @@ static void sspiReceive(SPIDriver *spip, size_t n, void *rxbuf) {
  */
 static void tl_start_receive(void)
 {
-  //  tl_state = receive_packet;
   spiStart(&SPID2, &spi2_slave);
   sspiReceive(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
-  while (mosiBuff[0] != 230) {
-    uint8_t dummy[TL_PACKET_SIZE_MISO];
-
-    spiStart(&SPID2, &spi2_slave);
-    sspiReceive(&SPID2, TL_PACKET_SIZE_MISO, dummy);
-
-    uint8_t dummy1[1] = {0};
-    spiStart(&SPID2, &spi2_slave_sync);
-    sspiSend(&SPID2, 1, dummy1);
-
-    spiStart(&SPID2, &spi2_slave);
-    sspiReceive(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
-  }
 }
 
 /**
@@ -173,9 +152,8 @@ static void tl_start_receive(void)
  */
 static void tl_start_send(void)
 {
-  //  tl_state = send_packet;
-   spiStart(&SPID2, &spi2_slave);
-   sspiSend(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
+  spiStart(&SPID2, &spi2_slave);
+  sspiSend(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
 }
 
 static THD_WORKING_AREA(waSPI, 256);
@@ -186,6 +164,9 @@ static THD_FUNCTION(spi_thread, th_data) {
   uint8_t cmpt = 0;
 
   while (true) {
+    // wait for slave select
+    chEvtWaitAny(EVT_nCS);
+
     tl_start_receive();
 
     // calibration
@@ -198,16 +179,19 @@ static THD_FUNCTION(spi_thread, th_data) {
       // TODO
     }
 
+    // coordinates of our robot, from kalman result
     misoBuff[0] = (uint16_t) xVect[0][0];
     misoBuff[1] = ((uint16_t) xVect[0][0]) >> 8;
     misoBuff[2] = (uint16_t) xVect[1][0];
     misoBuff[3] = ((uint16_t) xVect[1][0]) >> 8;
 
+    // coordinates of small foe
     misoBuff[4] = (uint16_t) SFCoordinates[0];
     misoBuff[5] = ((uint16_t) SFCoordinates[0]) >> 8;
     misoBuff[6] = (uint16_t) SFCoordinates[1];
     misoBuff[7] = ((uint16_t) SFCoordinates[1]) >> 8;
 
+    // coordinates of big foe
     misoBuff[8] = (uint16_t) BFCoordinates[0];
     misoBuff[9] = ((uint16_t) BFCoordinates[0]) >> 8;
     misoBuff[10] = (uint16_t) BFCoordinates[1];
