@@ -70,7 +70,7 @@ void deca_sleep(unsigned int time_ms) { chThdSleepMilliseconds(time_ms); }
 
 
 // communication configuration
-static const dwt_config_t radioConfig = {
+static dwt_config_t radioConfig = {
 	2,               // Channel number
 	DWT_PRF_64M,     // Pulse repetition frequency
 	DWT_PLEN_256,    // Preamble length. Used in TX only
