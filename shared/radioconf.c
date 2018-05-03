@@ -6,9 +6,9 @@ const char TXtimeTable[] = {
   BEACON1_ID,
   BEACON2_ID,
   BEACON3_ID,
-  BIGBOT_ID,
   BIGFOE_ID,
-  SMALLFOE_ID
+  SMALLFOE_ID,
+  BIGBOT_ID
 };
 
 // parts that should be listening in each time slot

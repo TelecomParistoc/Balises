@@ -9,7 +9,7 @@
 #include "../shared/decafunctions.h"
 #include "../shared/decadriver/deca_device_api.h"
 #include "../shared/decadriver/deca_regs.h"
-#include "nonvolatile.h"
+#include "../shared/nonvolatile.h"
 #include "radiocomms.h"
 #include "../shared/kalman.h"
 #include "usbconf.h"
@@ -85,7 +85,7 @@ static THD_FUNCTION(radioThread, th_data) {
       // check for time to send message
       if(TXtimeTable[i] & deviceUID) {
         // check if we are in a data time slot
-        if (i % 4 == 0) {
+        if (i == 6) {
           // computeCoordinates();
           kalmanIteration(distances[0] - offset1, distances[1] - offset2, distances[2] - offset3);
           // printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
@@ -111,7 +111,7 @@ static THD_FUNCTION(radioThread, th_data) {
             radioBuffer[24] = 0;
 
           // send data message
-          ret = messageSend(i*TIMESLOT_LENGTH, 0, 25);
+          ret = messageSend(timeslotTable[i], 0, 25);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret < 0)
@@ -122,7 +122,7 @@ static THD_FUNCTION(radioThread, th_data) {
           radioBuffer[0] = RANGE_MSG;
 
           // send ranging message
-          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
+          ret = messageSend(timeslotTable[i], 1, 1);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret <= 0)
@@ -165,7 +165,7 @@ static THD_FUNCTION(radioThread, th_data) {
 
       // if beacon is supposed to receive a message
       else if(deviceUID & RXtimeTable[i]) {
-        ret = messageReceive(i*TIMESLOT_LENGTH);
+        ret = messageReceive(timeslotTable[i]);
         // if it's a robot data message
         if(ret > 1 && radioBuffer[0] == DATA_MSG) {
           // store coordinates of foes

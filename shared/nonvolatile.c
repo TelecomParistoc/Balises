@@ -19,7 +19,7 @@ void setDeviceUID(BaseSequentialStream *chp, int argc, char **argv) {
 	(void) argv;
 
 	if(argc != 1) {
-		chprintf(chp, "USAGE: setid <NEW ID>\n");
+		chprintf(chp, "USAGE: setid <NEW ID>\r\n");
 		return;
 	}
 
@@ -28,7 +28,7 @@ void setDeviceUID(BaseSequentialStream *chp, int argc, char **argv) {
 	ret = flashPageErase(FLASHDATA_PAGE);
 	chSysUnlock();
 	if(ret) {
-		chprintf(chp, "Couln't erase flash.\n");
+		chprintf(chp, "Couln't erase flash.\r\n");
 		return;
 	}
 
@@ -38,11 +38,11 @@ void setDeviceUID(BaseSequentialStream *chp, int argc, char **argv) {
 	ret = flashWrite((flashaddr_t) &deviceUID, (char*) &newDeviceUID, sizeof(deviceUID));
 	chSysUnlock();
 	if(ret) {
-		chprintf(chp, "Couln't write flash.\n");
+		chprintf(chp, "Couln't write flash.\r\n");
 		return;
 	}
 
-	chprintf(chp, "OK\n");
+	chprintf(chp, "OK\r\n");
 }
 
 /* print ID of the device
@@ -51,5 +51,5 @@ void getDeviceUID(BaseSequentialStream *chp, int argc, char **argv) {
 	(void) argc;
 	(void) argv;
 
-	chprintf(chp, "Device ID = %d\n", deviceUID);
+	chprintf(chp, "Device ID = %d\r\n", deviceUID);
 }

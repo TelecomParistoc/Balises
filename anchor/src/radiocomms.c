@@ -9,7 +9,7 @@
 #include "../shared/decaplatform.h"
 #include "../shared/decafunctions.h"
 #include "../shared/decadriver/deca_regs.h"
-#include "nonvolatile.h"
+#include "../shared/nonvolatile.h"
 #include "remoteserial.h"
 
 // register the device sending messages when they are supposed to
@@ -59,10 +59,7 @@ static THD_FUNCTION(radioThread, th_data) {
       if(deviceUID & TXtimeTable[i]) {
         radioBuffer[0] = POLL_MSG;
 
-        // make sure TX done bit is cleared
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-        /* Write and send final message. */
-        decaSend(1, radioBuffer, 1, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+        messageSend(timeslotTable[i], 0, 1);
 
         uint64_t poll_tx_ts, resp_rx_ts;
         uint8_t receiveBuffer[RADIO_BUF_LEN];
@@ -70,8 +67,11 @@ static THD_FUNCTION(radioThread, th_data) {
 
         for (int j = 0; j < 3; j++) {
           int ret = decaReceive(RADIO_BUF_LEN, receiveBuffer, DWT_START_RX_IMMEDIATE);
+          printf("%u\r\n", receiveBuffer[0]);
 
           if (ret > 0 && receiveBuffer[0] == RESP_MSG) {
+            connectedDevices |= (1 << (j+4));
+
             /* Retrieve poll transmission and response reception timestamp. */
             poll_tx_ts = getTXtimestamp();
             resp_rx_ts = getRXtimestamp();
@@ -79,6 +79,9 @@ static THD_FUNCTION(radioThread, th_data) {
             /* Write all timestamps in the final message. */
             final_msg_set_ts(&radioBuffer[1], poll_tx_ts);
             final_msg_set_ts(&radioBuffer[5+4*j], resp_rx_ts);
+          }
+          else {
+            connectedDevices &= ~(1 << (j+4));
           }
         }
 
@@ -101,7 +104,7 @@ static THD_FUNCTION(radioThread, th_data) {
 			// if beacon is supposed to receive a message
 			if(deviceUID & RXtimeTable[i]) {
         dwt_setrxtimeout(RX_TIMEOUT);
-				ret = messageReceive(i*TIMESLOT_LENGTH);
+				ret = messageReceive(timeslotTable[i]);
 				// if it's a ranging message
 				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i]) {
 					messageAnswer(sendSerialData(&radioBuffer[3], TXtimeTable[i])+3);
@@ -110,7 +113,7 @@ static THD_FUNCTION(radioThread, th_data) {
 					parseRobotData(TXtimeTable[i], ret);
 					connectedDevices |= TXtimeTable[i];
 				} else {
-					connectedDevices &= ~TXtimeTable[i];
+					// connectedDevices &= ~TXtimeTable[i];
 				}
 			}
 		}

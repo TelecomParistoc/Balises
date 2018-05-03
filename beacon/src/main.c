@@ -7,7 +7,7 @@
 #include "exticonf.h"
 #include "radiocomms.h"
 #include "spicomms.h"
-#include "nonvolatile.h"
+#include "../shared/nonvolatile.h"
 #include "../shared/battery.h"
 
 static THD_WORKING_AREA(waShell, 1024);

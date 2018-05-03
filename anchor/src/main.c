@@ -6,7 +6,7 @@
 #include "usbconf.h"
 #include "exticonf.h"
 #include "radiocomms.h"
-#include "nonvolatile.h"
+#include "../shared/nonvolatile.h"
 #include "remoteserial.h"
 #include "../shared/battery.h"
 

@@ -9,7 +9,7 @@
 #include "../shared/decafunctions.h"
 #include "../shared/decadriver/deca_device_api.h"
 #include "../shared/decadriver/deca_regs.h"
-#include "nonvolatile.h"
+#include "../shared/nonvolatile.h"
 #include "radiocomms.h"
 #include "../shared/kalman.h"
 #include "usbconf.h"
