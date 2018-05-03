@@ -8,10 +8,9 @@
 #include "../shared/radioconf.h"
 #include "../shared/decaplatform.h"
 #include "../shared/decafunctions.h"
+#include "../shared/decadriver/deca_regs.h"
 #include "nonvolatile.h"
 #include "remoteserial.h"
-
-#define RESP_RX_TO_FINAL_TX_DLY_UUS 3100
 
 // register the device sending messages when they are supposed to
 static uint8_t connectedDevices = 0;
@@ -56,40 +55,52 @@ static THD_FUNCTION(radioThread, th_data) {
 
 	while(1) {
 		synchronizeOnSOF(deviceUID == BEACON1_ID);
-		for(int i=1; i<FRAME_LENGTH; i++) {
-			// skip useless data messages for the beacon
-			if(RXtimeTable[i] != deviceUID && TXtimeTable[i] != dataID)
-				continue;
-
+		for(int i = 1; i < FRAME_LENGTH; i++) {
       if(deviceUID & TXtimeTable[i]) {
-        uint8_t retBuff[3][RADIO_BUF_LEN];
         radioBuffer[0] = POLL_MSG;
-        messageSend(i*TIMESLOT_LENGTH, 3, 1, retBuff);
 
-        if (retBuff[0][0] == RESP_MSG) {
-          /* Retrieve poll transmission and response reception timestamp. */
-          uint64_t poll_tx_ts = getTXtimestamp();
-          uint64_t resp_rx_ts = getRXtimestamp();
+        // make sure TX done bit is cleared
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+        /* Write and send final message. */
+        decaSend(1, radioBuffer, 1, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 
-          /* Compute final message transmission time. */
-          uint32_t final_tx_time = (resp_rx_ts + (RESP_RX_TO_FINAL_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
-          dwt_setdelayedtrxtime(final_tx_time);
+        uint64_t poll_tx_ts, resp_rx_ts;
+        uint8_t receiveBuffer[RADIO_BUF_LEN];
+        dwt_setrxtimeout((uint16_t) (1.5*POLL_RX_TO_RESP_TX_DLY_UUS));
 
-          /* Final TX timestamp is the transmission time we programmed plus the TX antenna delay. */
-          uint64_t final_tx_ts = (((uint64_t)(final_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+        for (int j = 0; j < 3; j++) {
+          int ret = decaReceive(RADIO_BUF_LEN, receiveBuffer, DWT_START_RX_IMMEDIATE);
 
-          /* Write all timestamps in the final message. */
-          radioBuffer[0] = FINAL_MSG;
-          final_msg_set_ts(&radioBuffer[1], poll_tx_ts);
-          final_msg_set_ts(&radioBuffer[5], resp_rx_ts);
-          final_msg_set_ts(&radioBuffer[9], final_tx_ts);
+          if (ret > 0 && receiveBuffer[0] == RESP_MSG) {
+            /* Retrieve poll transmission and response reception timestamp. */
+            poll_tx_ts = getTXtimestamp();
+            resp_rx_ts = getRXtimestamp();
 
-          messageSend(i*TIMESLOT_LENGTH, 0, 13, NULL);
+            /* Write all timestamps in the final message. */
+            final_msg_set_ts(&radioBuffer[1], poll_tx_ts);
+            final_msg_set_ts(&radioBuffer[5+4*j], resp_rx_ts);
+          }
         }
+
+        radioBuffer[0] = FINAL_MSG;
+
+        /* Compute final message transmission time. */
+        uint32_t final_tx_time = (resp_rx_ts + (RESP_RX_TO_FINAL_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+        dwt_setdelayedtrxtime(final_tx_time);
+
+        /* Final TX timestamp is the transmission time we programmed plus the TX antenna delay. */
+        uint64_t final_tx_ts = (((uint64_t)(final_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+        final_msg_set_ts(&radioBuffer[17], final_tx_ts);
+
+        // make sure TX done bit is cleared
+        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+        /* Write and send final message. */
+        decaSend(21, radioBuffer, 1, DWT_START_TX_DELAYED);
       }
 
 			// if beacon is supposed to receive a message
 			if(deviceUID & RXtimeTable[i]) {
+        dwt_setrxtimeout(RX_TIMEOUT);
 				ret = messageReceive(i*TIMESLOT_LENGTH);
 				// if it's a ranging message
 				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i]) {

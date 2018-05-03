@@ -16,6 +16,10 @@
 /* required time between RX enable and actual RX */
 #define AHEAD_OF_TX_MARGIN 200*UUS_TO_DWT_TIME
 
+#define RESP_RX_TO_FINAL_TX_DLY_UUS 3100
+#define POLL_RX_TO_RESP_TX_DLY_UUS 2600
+#define RESP_TX_TO_FINAL_RX_DLY_UUS 500
+
 /* message IDs : */
 #define SOF_MSG 0x50
 #define RANGE_MSG 0x23
@@ -47,13 +51,16 @@
 
 /* time slot length in ms */
 #define TIMESLOT_LENGTH 2
+#define DS_TWR_LENGTH 12
 
 /* total length of a frame in number of time slots */
-#define FRAME_LENGTH 13
+#define FRAME_LENGTH 7
 
 /* parts that should be transmitting in each time slot (defined in radioconf.c) */
 extern const char TXtimeTable[];
 /* parts that should be listening in each time slot (defined in radioconf.c) */
 extern const char RXtimeTable[];
+
+extern const int timeslotTable[];
 
 #endif

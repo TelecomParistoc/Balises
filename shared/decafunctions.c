@@ -31,7 +31,7 @@ void synchronizeOnSOF(int isSOFsender) {
 			dwt_setrxtimeout(RX_TIMEOUT);
 			decaSend(1, radioBuffer, 1, DWT_START_TX_IMMEDIATE);
 		} else {
-			messageSend(FRAME_LENGTH*TIMESLOT_LENGTH, 0, 1, NULL);
+			messageSend(FRAME_LENGTH*TIMESLOT_LENGTH, 0, 1);
 		}
 		startOfFrameTime(1); // store SOF time
 		return;
@@ -84,7 +84,7 @@ int messageAnswer(int size) {
 	return decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED);
 }
 
-int messageSend(int timeInFrame, int expectAnswer, int size, uint8_t retBuffer[expectAnswer][RADIO_BUF_LEN]) {
+int messageSend(int timeInFrame, int expectAnswer, int size) {
 	sleepUntil(sofSystime, timeInFrame - 1);
 	dwt_setdelayedtrxtime((sofTS  + timeInFrame*MS_TO_DWT) >> 8);
 
@@ -92,12 +92,10 @@ int messageSend(int timeInFrame, int expectAnswer, int size, uint8_t retBuffer[e
 	dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
 
 	// send message and receive answer if expected
-	if(expectAnswer > 0) {
+	if(expectAnswer) {
 		if(decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED) < 0)
 			return -4;
-    for (int i = 0; i < expectAnswer; i++) {
-      decaReceive(RADIO_BUF_LEN, retBuffer[i], NO_RX_ENABLE);
-    }
+		return decaReceive(RADIO_BUF_LEN, radioBuffer, NO_RX_ENABLE);
 	} else if(decaSend(size, radioBuffer, 1, DWT_START_TX_DELAYED) < 0)
 		return -4;
 

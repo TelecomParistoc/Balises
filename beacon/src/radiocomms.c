@@ -8,6 +8,7 @@
 #include "../shared/decaplatform.h"
 #include "../shared/decafunctions.h"
 #include "../shared/decadriver/deca_device_api.h"
+#include "../shared/decadriver/deca_regs.h"
 #include "nonvolatile.h"
 #include "radiocomms.h"
 #include "../shared/kalman.h"
@@ -15,7 +16,6 @@
 #include <math.h>
 
 #define CALIBRATION_STEPS 100
-#define POLL_RX_TO_RESP_TX_DLY_UUS 2600
 
 // Initial position of the robots
 #define BBX 200
@@ -111,7 +111,7 @@ static THD_FUNCTION(radioThread, th_data) {
             radioBuffer[24] = 0;
 
           // send data message
-          ret = messageSend(i*TIMESLOT_LENGTH, 0, 25, NULL);
+          ret = messageSend(i*TIMESLOT_LENGTH, 0, 25);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret < 0)
@@ -122,7 +122,7 @@ static THD_FUNCTION(radioThread, th_data) {
           radioBuffer[0] = RANGE_MSG;
 
           // send ranging message
-          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1, NULL);
+          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret <= 0)
@@ -183,7 +183,7 @@ static THD_FUNCTION(radioThread, th_data) {
           }
         }
 
-        else if (radioBuffer[0] == POLL_MSG) {
+        else if (ret > 0 && radioBuffer[0] == POLL_MSG) {
           /* Retrieve poll reception timestamp. */
           uint64_t poll_rx_ts = getRXtimestamp();
 
@@ -191,11 +191,20 @@ static THD_FUNCTION(radioThread, th_data) {
           uint32_t resp_tx_time = (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
           dwt_setdelayedtrxtime(resp_tx_time);
 
+          /* Set expected delay and timeout for final message reception. */
+          dwt_setrxaftertxdelay(2*RESP_RX_TO_FINAL_TX_DLY_UUS + RESP_TX_TO_FINAL_RX_DLY_UUS);
+          dwt_setrxtimeout(3*(RESP_RX_TO_FINAL_TX_DLY_UUS + 200));
+
           /* Write and send the response message. */
           radioBuffer[0] = RESP_MSG;
-          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1, NULL);
 
-          if (radioBuffer[0] == FINAL_MSG) {
+          // make sure TX done bit is cleared
+          dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+          /* Write and send final message. */
+          decaSend(1, radioBuffer, 1, DWT_START_TX_DELAYED | DWT_RESPONSE_EXPECTED);
+          ret = decaReceive(RADIO_BUF_LEN, radioBuffer, NO_RX_ENABLE);
+
+          if (ret > 1 && radioBuffer[0] == FINAL_MSG) {
             uint32_t poll_tx_ts, resp_rx_ts, final_tx_ts, poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
             double Ra, Rb, Da, Db, tof, distance;
             int64_t tof_dtu, resp_tx_ts, final_rx_ts;
@@ -207,7 +216,7 @@ static THD_FUNCTION(radioThread, th_data) {
             /* Get timestamps embedded in the final message. */
             final_msg_get_ts(&radioBuffer[1], &poll_tx_ts);
             final_msg_get_ts(&radioBuffer[5], &resp_rx_ts);
-            final_msg_get_ts(&radioBuffer[9], &final_tx_ts);
+            final_msg_get_ts(&radioBuffer[17], &final_tx_ts);
 
             /* Compute time of flight. 32-bit subtractions give correct answers even if clock has wrapped. */
             poll_rx_ts_32 = (uint32_t)poll_rx_ts;
