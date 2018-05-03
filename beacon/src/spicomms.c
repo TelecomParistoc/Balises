@@ -2,6 +2,7 @@
 #include "../shared/kalman.h"
 #include "radiocomms.h"
 
+#include "exticonf.h"
 #include "chprintf.h"
 #include "usbconf.h"
 #include "spicomms.h"
@@ -11,8 +12,6 @@
 
 #define CALIBRATION_SYMBOL 0b1101
 #define REPOSITION_SYMBOL 0b1011
-
-#define EVT_nCS EVENT_MASK(12)
 
 #define MODE 2
 
@@ -159,14 +158,15 @@ static void tl_start_send(void)
 static THD_WORKING_AREA(waSPI, 256);
 static THD_FUNCTION(spi_thread, th_data) {
   (void) th_data;
+  event_listener_t evt_listener;
+  chEvtRegisterMask(&spi_event, &evt_listener, EVENT_MASK(1));
 
   chRegSetThreadName("SPI slave thread");
   uint8_t cmpt = 0;
 
   while (true) {
     // wait for slave select
-    chEvtWaitAny(EVT_nCS);
-
+    chEvtWaitAny(ALL_EVENTS);
     tl_start_receive();
 
     // calibration
