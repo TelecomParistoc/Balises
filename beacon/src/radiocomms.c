@@ -15,6 +15,7 @@
 #include <math.h>
 
 #define CALIBRATION_STEPS 100
+#define POLL_RX_TO_RESP_TX_DLY_UUS 2600
 
 // Initial position of the robots
 #define BBX 200
@@ -44,6 +45,13 @@ void computeCoordinates() {
   // int z2 = distances[0]*distances[0]-radioData.x*radioData.x-radioData.y*radioData.y;
 
   // TODO: compare z2 to the real height of the beacon to exclude incoherent input
+}
+
+static void final_msg_get_ts(const uint8_t *ts_field, uint32_t *ts) {
+    *ts = 0;
+    for (int i = 0; i < 4; i++) {
+        *ts += ts_field[i] << (i * 8);
+    }
 }
 
 static THD_WORKING_AREA(waRadio, 1024);
@@ -96,15 +104,14 @@ static THD_FUNCTION(radioThread, th_data) {
             radioBuffer[2*j+20] = ((uint16_t) xVect[j][0]) >> 8;
           }
           radioBuffer[23] = radioBuffer[24] = 0;
-          radioBuffer[25] = 0;
 
           if (calibration == 1)
-            radioBuffer[57] = CAL_MSG;
+            radioBuffer[24] = CAL_MSG;
           else
-            radioBuffer[57] = 0;
+            radioBuffer[24] = 0;
 
           // send data message
-          ret = messageSend(i*TIMESLOT_LENGTH, 0, 26);
+          ret = messageSend(i*TIMESLOT_LENGTH, 0, 25, NULL);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret < 0)
@@ -113,10 +120,9 @@ static THD_FUNCTION(radioThread, th_data) {
 
         else {
           radioBuffer[0] = RANGE_MSG;
-          // something else to put in radioBuffer here?
 
           // send ranging message
-          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
+          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1, NULL);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret <= 0)
@@ -174,6 +180,47 @@ static THD_FUNCTION(radioThread, th_data) {
             SFCoordinates[0] |= (radioBuffer[2] << 8);
             SFCoordinates[1] = radioBuffer[3];
             SFCoordinates[1] |= (radioBuffer[4] << 8);
+          }
+        }
+
+        else if (radioBuffer[0] == POLL_MSG) {
+          /* Retrieve poll reception timestamp. */
+          uint64_t poll_rx_ts = getRXtimestamp();
+
+          /* Set send time for response. */
+          uint32_t resp_tx_time = (poll_rx_ts + (POLL_RX_TO_RESP_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+          dwt_setdelayedtrxtime(resp_tx_time);
+
+          /* Write and send the response message. */
+          radioBuffer[0] = RESP_MSG;
+          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1, NULL);
+
+          if (radioBuffer[0] == FINAL_MSG) {
+            uint32_t poll_tx_ts, resp_rx_ts, final_tx_ts, poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
+            double Ra, Rb, Da, Db, tof, distance;
+            int64_t tof_dtu, resp_tx_ts, final_rx_ts;
+
+            /* Retrieve response transmission and final reception timestamps. */
+            resp_tx_ts = getTXtimestamp();
+            final_rx_ts = getRXtimestamp();
+
+            /* Get timestamps embedded in the final message. */
+            final_msg_get_ts(&radioBuffer[1], &poll_tx_ts);
+            final_msg_get_ts(&radioBuffer[5], &resp_rx_ts);
+            final_msg_get_ts(&radioBuffer[9], &final_tx_ts);
+
+            /* Compute time of flight. 32-bit subtractions give correct answers even if clock has wrapped. */
+            poll_rx_ts_32 = (uint32_t)poll_rx_ts;
+            resp_tx_ts_32 = (uint32_t)resp_tx_ts;
+            final_rx_ts_32 = (uint32_t)final_rx_ts;
+            Ra = (double)(resp_rx_ts - poll_tx_ts);
+            Rb = (double)(final_rx_ts_32 - resp_tx_ts_32);
+            Da = (double)(final_tx_ts - resp_rx_ts);
+            Db = (double)(resp_tx_ts_32 - poll_rx_ts_32);
+            tof_dtu = (int64_t)((Ra * Rb - Da * Db) / (Ra + Rb + Da + Db));
+
+            tof = tof_dtu * DWT_TIME_UNITS;
+            distance = tof * SPEED_OF_LIGHT;
           }
         }
       }

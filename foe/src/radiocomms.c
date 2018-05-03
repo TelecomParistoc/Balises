@@ -82,7 +82,7 @@ static THD_FUNCTION(radioThread, th_data) {
           radioBuffer[5] = 0;
 
           // send data message
-          ret = messageSend(i*TIMESLOT_LENGTH, 0, 6);
+          ret = messageSend(i*TIMESLOT_LENGTH, 0, 6, NULL);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret < 0)
@@ -94,7 +94,7 @@ static THD_FUNCTION(radioThread, th_data) {
           // something else to put in radioBuffer here?
 
           // send ranging message
-          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1);
+          ret = messageSend(i*TIMESLOT_LENGTH, 1, 1, NULL);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret <= 0)

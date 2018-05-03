@@ -5,7 +5,7 @@
 #define POLL_TO_RESP_DLY 800*UUS_TO_DWT_TIME
 
 /* Delay between poll and RX activation */
-#define POLL_TO_RESP_RX 600
+#define POLL_TO_RESP_RX 150
 
 /* RX timeout in us */
 #define RX_TIMEOUT 600
@@ -20,6 +20,9 @@
 #define SOF_MSG 0x50
 #define RANGE_MSG 0x23
 #define DATA_MSG 0x32
+#define POLL_MSG 0x29
+#define RESP_MSG 0xCD
+#define FINAL_MSG 0xD5
 #define CAL_MSG 0x36
 
 /* system IDs : */

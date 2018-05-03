@@ -11,6 +11,8 @@
 #include "nonvolatile.h"
 #include "remoteserial.h"
 
+#define RESP_RX_TO_FINAL_TX_DLY_UUS 3100
+
 // register the device sending messages when they are supposed to
 static uint8_t connectedDevices = 0;
 // not zero if position tracing is active
@@ -33,6 +35,13 @@ void parseRobotData(int senderID, int size) {
 		receiveSerialData(&radioBuffer[26], radioBuffer[25], senderID);
 }
 
+static void final_msg_set_ts(uint8_t *ts_field, uint64_t ts) {
+  for (int i = 0; i < 4; i++) {
+    ts_field[i] = (uint8_t) ts;
+    ts >>= 8;
+  }
+}
+
 static THD_WORKING_AREA(waRadio, 512);
 static THD_FUNCTION(radioThread, th_data) {
 	event_listener_t evt_listener;
@@ -51,6 +60,34 @@ static THD_FUNCTION(radioThread, th_data) {
 			// skip useless data messages for the beacon
 			if(RXtimeTable[i] != deviceUID && TXtimeTable[i] != dataID)
 				continue;
+
+      if(deviceUID & TXtimeTable[i]) {
+        uint8_t retBuff[3][RADIO_BUF_LEN];
+        radioBuffer[0] = POLL_MSG;
+        messageSend(i*TIMESLOT_LENGTH, 3, 1, retBuff);
+
+        if (retBuff[0][0] == RESP_MSG) {
+          /* Retrieve poll transmission and response reception timestamp. */
+          uint64_t poll_tx_ts = getTXtimestamp();
+          uint64_t resp_rx_ts = getRXtimestamp();
+
+          /* Compute final message transmission time. */
+          uint32_t final_tx_time = (resp_rx_ts + (RESP_RX_TO_FINAL_TX_DLY_UUS * UUS_TO_DWT_TIME)) >> 8;
+          dwt_setdelayedtrxtime(final_tx_time);
+
+          /* Final TX timestamp is the transmission time we programmed plus the TX antenna delay. */
+          uint64_t final_tx_ts = (((uint64_t)(final_tx_time & 0xFFFFFFFEUL)) << 8) + TX_ANT_DLY;
+
+          /* Write all timestamps in the final message. */
+          radioBuffer[0] = FINAL_MSG;
+          final_msg_set_ts(&radioBuffer[1], poll_tx_ts);
+          final_msg_set_ts(&radioBuffer[5], resp_rx_ts);
+          final_msg_set_ts(&radioBuffer[9], final_tx_ts);
+
+          messageSend(i*TIMESLOT_LENGTH, 0, 13, NULL);
+        }
+      }
+
 			// if beacon is supposed to receive a message
 			if(deviceUID & RXtimeTable[i]) {
 				ret = messageReceive(i*TIMESLOT_LENGTH);

@@ -3,7 +3,7 @@
 
 /* RX/TX buffer (size = RADIO_BUF_LEN)
  * write here bytes to send, read here bytes received */
-#define RADIO_BUF_LEN 108
+#define RADIO_BUF_LEN 25
 extern uint8_t radioBuffer[];
 
 /* generate or wait for start-of-frame message. Calling this is required to give
@@ -33,6 +33,6 @@ int messageAnswer(int size);
  *    expectAnswer : 1 if receiver will send back an answer, 0 otherwise.
  *    size : size of the message in bytes (message shall be written in
  *      radioBuffer) */
-int messageSend(int timeInFrame, int expectAnswer, int size);
+int messageSend(int timeInFrame, int expectAnswer, int size, uint8_t retBuffer[expectAnswer][RADIO_BUF_LEN]);
 
 #endif

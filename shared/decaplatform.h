@@ -1,6 +1,8 @@
 #ifndef DECAPLATFORM_H
 #define DECAPLATFORM_H
 
+#include "decadriver/deca_device_api.h"
+
 /* Default antenna delay values for 64 MHz PRF */
 #define TX_ANT_DLY 16393
 #define RX_ANT_DLY 16393
