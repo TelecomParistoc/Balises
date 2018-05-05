@@ -67,7 +67,6 @@ static THD_FUNCTION(radioThread, th_data) {
 
         for (int j = 0; j < 3; j++) {
           int ret = decaReceive(RADIO_BUF_LEN, receiveBuffer, DWT_START_RX_IMMEDIATE);
-          printf("%u\r\n", receiveBuffer[0]);
 
           if (ret > 0 && receiveBuffer[0] == RESP_MSG) {
             connectedDevices |= (1 << (j+4));
@@ -99,11 +98,13 @@ static THD_FUNCTION(radioThread, th_data) {
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
         /* Write and send final message. */
         decaSend(21, radioBuffer, 1, DWT_START_TX_DELAYED);
+
+        // revert rxtimeout to normal
+        dwt_setrxtimeout(RX_TIMEOUT);
       }
 
 			// if beacon is supposed to receive a message
 			if(deviceUID & RXtimeTable[i]) {
-        dwt_setrxtimeout(RX_TIMEOUT);
 				ret = messageReceive(timeslotTable[i]);
 				// if it's a ranging message
 				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i]) {

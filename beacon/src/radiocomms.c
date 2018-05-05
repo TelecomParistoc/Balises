@@ -231,6 +231,10 @@ static THD_FUNCTION(radioThread, th_data) {
             tof = tof_dtu * DWT_TIME_UNITS;
             distance = tof * SPEED_OF_LIGHT;
           }
+
+          // revert delay and timeout to normal
+          dwt_setrxaftertxdelay(POLL_TO_RESP_RX);
+          dwt_setrxtimeout(RX_TIMEOUT);
         }
       }
     }
