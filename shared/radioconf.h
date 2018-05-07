@@ -23,9 +23,9 @@
 #define CAL_MSG 0x36
 
 /* system IDs : */
-#define BEACON1_ID  0x01
-#define BEACON2_ID  0x02
-#define BEACON3_ID  0x04
+#define ANCHOR1_ID  0x01
+#define ANCHOR2_ID  0x02
+#define ANCHOR3_ID  0x04
 #define BIGFOE_ID   0x08
 #define SMALLFOE_ID 0x10
 #define BIGBOT_ID   0x20

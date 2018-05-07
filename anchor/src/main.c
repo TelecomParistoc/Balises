@@ -39,7 +39,7 @@ int main(void) {
 
 	// initialize hardware
 	initExti();
-	initBattery();
+	// initBattery();
 	initUSB();
 
 	// start radio thread
