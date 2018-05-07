@@ -1,9 +1,11 @@
 #ifndef DECAPLATFORM_H
 #define DECAPLATFORM_H
 
-/* Default antenna delay values for 64 MHz PRF */
-#define TX_ANT_DLY 16393
-#define RX_ANT_DLY 16393
+/* Custom antenna delay values for 64 MHz PRF */
+#define RX_ANT_DLY ((((int)log2(deviceUID)) >= 0 && ((int)log2(deviceUID)) <= 5) ? 56.0*DLY[(int)log2(deviceUID)]/100 : 13067)
+#define TX_ANT_DLY ((((int)log2(deviceUID)) >= 0 && ((int)log2(deviceUID)) <= 5) ? 44.0*DLY[(int)log2(deviceUID)]/100 : 10267)
+
+extern const int DLY[6];
 
 /* Speed of light in air, in metres per second */
 #define SPEED_OF_LIGHT 299702547

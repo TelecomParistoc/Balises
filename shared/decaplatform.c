@@ -10,6 +10,8 @@
 #include "decadriver/deca_regs.h"
 #include "exticonf.h"
 #include "decaplatform.h"
+#include <math.h>
+#include "nonvolatile.h"
 
 // 2.25MHz SPI configuration, CPHA=0, CPOL=0
 static const SPIConfig slowspiconfig = {
@@ -28,6 +30,15 @@ static const SPIConfig spiconfig = {
 	GPIOB_DWM_nCS,
 	0,
 	0
+};
+
+const int DLY[6] = {
+  24080,
+  22501,
+  23058,
+  23580,
+  23277,
+  23508
 };
 
 static void initDecaPlatform(void) {

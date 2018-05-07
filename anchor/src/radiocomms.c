@@ -8,7 +8,7 @@
 #include "../shared/radioconf.h"
 #include "../shared/decaplatform.h"
 #include "../shared/decafunctions.h"
-#include "nonvolatile.h"
+#include "../shared/nonvolatile.h"
 #include "remoteserial.h"
 
 // register the device sending messages when they are supposed to
