@@ -3,6 +3,8 @@
 #include "kalman.h"
 
 #define  PI 3.14159265358979323846
+/* Speed of light in air, in metres per second */
+#define SPEED_OF_LIGHT 299702547
 
 void printMatrix(int rows, int columns, float a[][columns]) {
 	int i, j;
@@ -227,12 +229,52 @@ static struct point_t LSQ(float d1, float d2, float d3) {
   return ret;
 }
 
+static const int RSLToRangeBiais[17] = { // mm
+  -198,
+  -187,
+  -179,
+  -163,
+  -143,
+  -127,
+  -109,
+  -84,
+  -59,
+  -31,
+  0,
+  36,
+  65,
+  84,
+  97,
+  106,
+  110
+};
+
+/* see APS011, pages 10-14 */
+static void rangeBiais(float * d) {
+  const float Pt = -14.3; // dBm
+  const int G = 0; // dB, TODO: calibrate gain
+  const int fc = 3994; // MHz
+
+  float Pr = Pt + G + 20*log10(SPEED_OF_LIGHT)-20*log10(4*M_PI*fc*(*d)) - 60; // dBm
+
+  int i = 0;
+  while ((Pr < -2*i-61) && (-93 < -2*i-61)) {
+    i++;
+  }
+  *d = *d - RSLToRangeBiais[i];
+}
+
 struct point_t kalmanIteration(float d1, float d2, float d3) {
   float distances[3] = {d1, d2, d3};
   float distancesWGN[3] = {0, 0, 0};
   float mean[3] = {0, 0, 0};
   float variance[3] = {729, 729, 729};
   awgn(3, mean, variance, distances, distancesWGN);
+
+  // rangeBiais(&distancesWGN[0]);
+  // rangeBiais(&distancesWGN[1]);
+  // rangeBiais(&distancesWGN[2]);
+
 
   struct point_t lsq = LSQ(distancesWGN[0], distancesWGN[1], distancesWGN[2]);
 

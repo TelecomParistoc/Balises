@@ -22,15 +22,11 @@ void parseRobotData(int senderID, int size) {
 	(void) size;
 
 	if(showPosActive) {
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < 5; i++) {
       printf("%i,", *((int16_t*) &radioBuffer[2*i+1]));
     }
-    printf("%i\r\n", *((int16_t*) &radioBuffer[23]));
+    printf("\r\n");
   }
-
-	// if there are remote serial data sent
-	if(radioBuffer[25] > 0)
-		receiveSerialData(&radioBuffer[26], radioBuffer[25], senderID);
 }
 
 static THD_WORKING_AREA(waRadio, 512);
@@ -55,7 +51,7 @@ static THD_FUNCTION(radioThread, th_data) {
 			if(deviceUID & RXtimeTable[i]) {
 				ret = messageReceive(i*TIMESLOT_LENGTH);
 				// if it's a ranging message
-				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i]) {
+				if(ret == 1 && radioBuffer[0] == RANGE_MSG && deviceUID == RXtimeTable[i] && deviceUID < 8) {
 					messageAnswer(sendSerialData(&radioBuffer[3], TXtimeTable[i])+3);
 					connectedDevices |= TXtimeTable[i];
 				} else if(ret > 1 && radioBuffer[0] == DATA_MSG) { // if it's a robot data message

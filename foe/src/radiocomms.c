@@ -117,6 +117,9 @@ static THD_FUNCTION(radioThread, th_data) {
             // compute distance
             distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
 
+            // take range biais into account
+            distanceInMm = (int) rangeBiais(distanceInMm);
+
             if (deviceUID == BIGFOE_ID) {
               distances[3-i] = distanceInMm;
               if (calibration > 0) {
@@ -141,7 +144,7 @@ static THD_FUNCTION(radioThread, th_data) {
         // if it's a robot data message
         if(ret > 1 && radioBuffer[0] == DATA_MSG) {
           // if BigBot sends a calibration order
-          if (radioBuffer[57] == CAL_MSG && calibration == 0)
+          if (radioBuffer[11] == CAL_MSG && calibration == 0)
             calibration = 1;
         }
       }

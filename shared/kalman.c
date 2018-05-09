@@ -3,6 +3,7 @@
 #include "kalman.h"
 #include "usbconf.h"
 #include "radioconf.h"
+#include "decaplatform.h"
 
 float var;
 float dt;
@@ -219,6 +220,41 @@ static void LSQ(float d1, float d2, float d3, float * x, float * y) {
 
   *x = xVect[0][0];
   *y = xVect[1][0];
+}
+
+static const int RSLToRangeBiais[17] = { // mm
+  -198,
+  -187,
+  -179,
+  -163,
+  -143,
+  -127,
+  -109,
+  -84,
+  -59,
+  -31,
+  0,
+  36,
+  65,
+  84,
+  97,
+  106,
+  110
+};
+
+/* see APS011, pages 10-14 */
+float rangeBiais(float d) {
+  const float Pt = -14.3; // dBm
+  const int G = 0; // dB, TODO: calibrate gain
+  const int fc = 3994; // MHz
+
+  float Pr = Pt + G + 20*log10(SPEED_OF_LIGHT)-20*log10(4*M_PI*fc*d) - 60; // dBm
+
+  int i = 0;
+  while ((Pr < -2*i-61) && (-93 < -2*i-61)) {
+    i++;
+  }
+  return d - RSLToRangeBiais[i];
 }
 
 void kalmanIteration(float d1, float d2, float d3) {

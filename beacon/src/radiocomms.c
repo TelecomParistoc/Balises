@@ -80,31 +80,24 @@ static THD_FUNCTION(radioThread, th_data) {
         if (i % 4 == 0) {
           // computeCoordinates();
           kalmanIteration(distances[0] - offset1, distances[1] - offset2, distances[2] - offset3);
-          // printf("%u,%u\r\n", (uint16_t) xVect[0][0], (uint16_t) xVect[1][0]);
 
           radioBuffer[0] = DATA_MSG;
-          for (int j = 0; j < 3; j++) {
-            radioBuffer[2*j+1] = (uint16_t) distances[j];
-            radioBuffer[2*j+2] = ((uint16_t) distances[j]) >> 8;
-          }
-          for (int j = 0; j < 6; j++) {
-            radioBuffer[2*j+7] = (uint16_t) unfiltered[j];
-            radioBuffer[2*j+8] = ((uint16_t) unfiltered[j]) >> 8;
-          }
           for (int j = 0; j < 2; j++) {
-            radioBuffer[2*j+19] = (uint16_t) xVect[j][0];
-            radioBuffer[2*j+20] = ((uint16_t) xVect[j][0]) >> 8;
+            radioBuffer[2*j+1] = (uint16_t) xVect[j][0];
+            radioBuffer[2*j+2] = ((uint16_t) xVect[j][0]) >> 8;
           }
-          radioBuffer[23] = radioBuffer[24] = 0;
-          radioBuffer[25] = 0;
+          for (int j = 0; j < 3; j++) {
+            radioBuffer[2*j+5] = (uint16_t) distances[j];
+            radioBuffer[2*j+6] = ((uint16_t) distances[j]) >> 8;
+          }
 
           if (calibration == 1)
-            radioBuffer[57] = CAL_MSG;
+            radioBuffer[11] = CAL_MSG;
           else
-            radioBuffer[57] = 0;
+            radioBuffer[11] = 0;
 
           // send data message
-          ret = messageSend(i*TIMESLOT_LENGTH, 0, 26);
+          ret = messageSend(i*TIMESLOT_LENGTH, 0, 12);
           if(ret == -4)
             printf("TXerr, f= %u\r\n", i);
           else if (ret < 0)
@@ -138,6 +131,9 @@ static THD_FUNCTION(radioThread, th_data) {
 
             // compute distance
             distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;
+
+            // take range biais into account
+            distanceInMm = (int) rangeBiais(distanceInMm);
 
             if (deviceUID == BIGBOT_ID) {
               distances[11-i] = distanceInMm;

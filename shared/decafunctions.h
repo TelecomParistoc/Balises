@@ -3,7 +3,7 @@
 
 /* RX/TX buffer (size = RADIO_BUF_LEN)
  * write here bytes to send, read here bytes received */
-#define RADIO_BUF_LEN 108
+#define RADIO_BUF_LEN 14
 extern uint8_t radioBuffer[];
 
 /* generate or wait for start-of-frame message. Calling this is required to give

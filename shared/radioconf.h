@@ -30,6 +30,7 @@
 #define SMALLFOE_ID 0x10
 #define BIGBOT_ID   0x20
 #define SMALLBOT_ID 0x40
+#define LOGBOT_ID   0x80
 
 /* beacons position */
 #define X1 (-60)
