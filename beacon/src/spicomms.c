@@ -13,56 +13,11 @@
 #define CALIBRATION_SYMBOL 0b1101
 #define REPOSITION_SYMBOL 0b1011
 
-#define MODE 2
-
 /*
  * SPI TX and RX buffers.
  */
 static uint8_t mosiBuff[TL_PACKET_SIZE_MOSI];
 static uint8_t misoBuff[TL_PACKET_SIZE_MISO];
-
-#if MODE == 1
-
-static const SPIConfig spi2_master = {
-   .slave_mode = false,
-   .end_cb     = NULL,
-   .ssport     = GPIOB,
-   .sspad      = GPIOB_MOT_nCS,
-   .cr1        = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0, // 140kHz
-   .cr2        = 0
-};
-
-static THD_WORKING_AREA(waSPI, 256);
-static THD_FUNCTION(spi_thread, p) {
-
-  (void)p;
-
-  chRegSetThreadName("SPI thread master");
-
-  uint8_t cmpt = 0;
-
-  spiStart(&SPID2, &spi2_master);
-
-  while (true) {
-    spiSelect(&SPID2);
-    mosiBuff[0] = 230;  // synchronization byte
-    mosiBuff[1] = cmpt; // calibration and reposition byte
-    if (calibration == 1) {
-      mosiBuff[1] &= 0xf0;
-      mosiBuff[1] |= CALIBRATION_SYMBOL;
-    }
-    // TODO: reposition
-    mosiBuff[2] = 153;
-    mosiBuff[3] = misoBuff[0];
-    spiSend(&SPID2, TL_PACKET_SIZE_MOSI, mosiBuff);
-    spiReceive(&SPID2, TL_PACKET_SIZE_MISO, misoBuff);
-    cmpt++;
-    spiUnselect(&SPID2);
-    chThdSleepMilliseconds(10);
-  }
-}
-
-#elif MODE == 2
 
 static const SPIConfig spi2_slave = {
    .slave_mode = true,
@@ -163,7 +118,6 @@ static THD_FUNCTION(spi_thread, th_data) {
   chEvtRegisterMask(&spi_event, &evt_listener, EVENT_MASK(1));
 
   chRegSetThreadName("SPI slave thread");
-  uint8_t cmpt = 0;
 
   while (true) {
     // wait for slave select
@@ -198,15 +152,9 @@ static THD_FUNCTION(spi_thread, th_data) {
     misoBuff[10] = (uint16_t) BFCoordinates[1];
     misoBuff[11] = ((uint16_t) BFCoordinates[1]) >> 8;
 
-    misoBuff[0] = cmpt;
-    misoBuff[1] = mosiBuff[1];
-
     tl_start_send();
-    cmpt ++;
   }
 }
-
-#endif
 
 void startSPI(void) {
   chThdCreateStatic(waSPI, sizeof(waSPI), NORMALPRIO+1, spi_thread, NULL);

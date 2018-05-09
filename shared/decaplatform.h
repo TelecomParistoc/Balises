@@ -2,8 +2,8 @@
 #define DECAPLATFORM_H
 
 /* Custom antenna delay values for 64 MHz PRF */
-int RX_ANT_DLY(void);
-int TX_ANT_DLY (void);
+#define RX_ANT_DLY 16393
+#define TX_ANT_DLY 16393
 
 /* Speed of light in air, in metres per second */
 #define SPEED_OF_LIGHT 299702547

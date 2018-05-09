@@ -112,7 +112,7 @@ static THD_FUNCTION(radioThread, th_data) {
             // retrieve beacon RX timestamp
             beacon_rx_ts = (int) radioBuffer[1] + ((int) radioBuffer[2] << 8);
             // compute precise time between beacon poll RX and response TX
-            beacon_hold_time = POLL_TO_RESP_DLY + TX_ANT_DLY() - (beacon_rx_ts & 0x1FF);
+            beacon_hold_time = POLL_TO_RESP_DLY + TX_ANT_DLY - (beacon_rx_ts & 0x1FF);
 
             // compute distance
             distanceInMm = (rx_ts - tx_ts - beacon_hold_time) * 1000 / 2.0 * DWT_TIME_UNITS * SPEED_OF_LIGHT;

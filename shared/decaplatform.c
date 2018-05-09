@@ -32,31 +32,6 @@ static const SPIConfig spiconfig = {
 	0
 };
 
-static const int DLY[6] = {
-  24080,
-  22501,
-  23058,
-  23580,
-  23277,
-  23508
-};
-
-static int myLog2 (int a) {
-  int i = 0;
-  while ((a >>= 1) > 0) {
-    i ++;
-  }
-  return i;
-}
-
-int RX_ANT_DLY(void) {
-  return (myLog2(deviceUID) <= 5) ? 56*DLY[myLog2(deviceUID)]/100 : 13067;
-}
-
-int TX_ANT_DLY (void) {
-  return (myLog2(deviceUID) <= 5) ? 44*DLY[myLog2(deviceUID)]/100 : 10267;
-}
-
 static void initDecaPlatform(void) {
 	// make sure chip select is not active
 	palSetLine(LINE_DWM_nCS);
@@ -127,8 +102,8 @@ int decaInit(void) {
 
 	dwt_configure(&radioConfig);
 	// Apply default antenna delay value.
-	dwt_setrxantennadelay(RX_ANT_DLY());
-	dwt_settxantennadelay(TX_ANT_DLY());
+	dwt_setrxantennadelay(RX_ANT_DLY);
+	dwt_settxantennadelay(TX_ANT_DLY);
 	// activate interrupts for tx done, rx done, rx errors and timeout
 	dwt_setinterrupt(SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR | SYS_STATUS_ALL_RX_TO | SYS_STATUS_TXFRS, 1);
 
